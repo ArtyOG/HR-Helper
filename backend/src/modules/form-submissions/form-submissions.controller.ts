@@ -74,4 +74,17 @@ export class FormSubmissionsController {
   async delete(@Req() req: { user: { id: number } }, @Param('submissionId') submissionId: string) {
     return this.submissionsService.delete(Number(submissionId), req.user.id);
   }
+
+  @Post(':submissionId/rescore')
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard)
+  @ApiOperation({ summary: 'Re-trigger AI CV scoring for a submission' })
+  @ApiResponse({ status: 200, type: SubmissionResponseDto })
+  async rescore(
+    @Req() req: { user: { id: number } },
+    @Param('formId') formId: string,
+    @Param('submissionId') submissionId: string,
+  ) {
+    return this.submissionsService.rescore(formId, Number(submissionId), req.user.id);
+  }
 }

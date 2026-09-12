@@ -33,6 +33,7 @@ services:
       S3_REGION: ${S3_REGION}
       S3_ENDPOINT: ${S3_ENDPOINT}
       S3_BUCKET_NAME: ${S3_BUCKET_NAME}
+      AI_SERVICE_URL: ${AI_SERVICE_URL}
     ports:
       - "${BACKEND_PORT:-3000}:3000"
       - "5555:5555" # Prisma Studio Port. Run `docker compose exec backend npx prisma studio` to access it.
