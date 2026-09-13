@@ -1,7 +1,7 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { FieldType } from '@prisma/client';
 
-export class OptionResponseDto {
+class OptionResponseDto {
   @ApiProperty({ example: 1 })
   id!: number;
 
@@ -21,7 +21,7 @@ export class OptionResponseDto {
   updatedAt!: Date;
 }
 
-export class FieldResponseDto {
+class FieldResponseDto {
   @ApiProperty({ example: 10 })
   id!: number;
 
@@ -50,7 +50,7 @@ export class FieldResponseDto {
   updatedAt!: Date;
 }
 
-export class FormResponseDto {
+export class FormListResponseDto {
   @ApiProperty({ example: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11' })
   id!: string;
 
@@ -75,15 +75,17 @@ export class FormResponseDto {
   @ApiProperty({ example: 1 })
   userId!: number;
 
-  @ApiProperty({ type: [FieldResponseDto], required: false })
-  fields?: FieldResponseDto[];
-
   @ApiProperty({ example: '2026-09-01T00:00:00.000Z' })
   createdAt!: Date;
 
   @ApiProperty({ example: '2026-09-01T00:00:00.000Z' })
   updatedAt!: Date;
 
-  @ApiProperty({ required: false, example: 5 })
-  submissionCount?: number;
+  @ApiProperty({ example: 5 })
+  submissionCount!: number;
+}
+
+export class FormResponseDto extends FormListResponseDto {
+  @ApiProperty({ type: [FieldResponseDto], required: false })
+  fields?: FieldResponseDto[];
 }

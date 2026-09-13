@@ -76,6 +76,12 @@ export class SubmissionDetailResponseDto {
   @ApiProperty({ example: 85.5, nullable: true })
   cvScore!: number | null;
 
+  @ApiProperty({ example: 'PENDING', enum: ['PENDING', 'PROCESSING', 'COMPLETED', 'FAILED', 'SKIPPED'] })
+  aiScoreStatus!: string;
+
+  @ApiProperty({ example: null, nullable: true })
+  aiError!: string | null;
+
   @ApiProperty({ example: '2026-09-01T00:00:00.000Z' })
   createdAt!: Date;
 

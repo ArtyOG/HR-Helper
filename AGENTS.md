@@ -28,8 +28,13 @@
   - When using a Guard in a controller, ensure the module providing the dependency (e.g., `AuthModule` for `JwtService`) is in the `imports` array.
 - **Strict Typing**: TypeScript `strict` mode is enabled. Use definite assignment assertions (`!`) for DTO properties.
 
-## Operational Gotchas
 - **Database Access**: Always perform Prisma commands (validate/generate/migrate) inside the docker container:
   `docker compose exec backend npx prisma <command>`
 - **Authentication**: JWT authentication is handled by `JwtAuthGuard` in `backend/src/modules/auth/auth.middleware.ts`.
 - **Anonymous Submissions**: Submissions are anonymous but must attach a CV stored in a private bucket, and require an email address for contact.
+
+## Development & Testing Workflow
+- Always read and follow [`backend/DEVELOPMENT.md`](backend/DEVELOPMENT.md) before running, testing, or building services. Do NOT run ad-hoc scripts against `./dist`.
+
+## Active Roadmaps & Checklists
+- **Backend Refactoring & Technical Debt**: Always consult [`backend/CHECKLIST.md`](backend/CHECKLIST.md) before making structural changes to submissions, CV handling, or AI evaluation.
