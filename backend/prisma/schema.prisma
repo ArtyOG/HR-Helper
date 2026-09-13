@@ -52,7 +52,7 @@ model File {
   createdAt DateTime   @default(now()) @map("created_at")
   updatedAt DateTime   @updatedAt @map("updated_at")
 
-  cvSubmissions FormSubmission[]
+  cvEvaluation  CvEvaluation?
 
   @@map("files")
 }
@@ -110,19 +110,31 @@ model Option {
 model FormSubmission {
   id             Int              @id @default(autoincrement())
   formId         String           @map("form_id")
-  cvFileId       Int              @unique @map("cv_file_id")
   status         SubmissionStatus @default(PENDING)
-  cvScore        Float?           @map("cv_score")
-  aiScoreStatus  AiScoreStatus    @default(PENDING) @map("ai_score_status")
-  aiError        String?          @db.Text @map("ai_error")
   email          String
   createdAt      DateTime         @default(now()) @map("created_at")
 
-  form      Form     @relation(fields: [formId], references: [id], onDelete: Cascade)
-  cvFile    File     @relation(fields: [cvFileId], references: [id], onDelete: Cascade)
-  answers   SubmissionAnswer[]
+  form           Form             @relation(fields: [formId], references: [id], onDelete: Cascade)
+  cvEvaluation   CvEvaluation?
+  answers        SubmissionAnswer[]
 
   @@map("form_submissions")
+}
+
+model CvEvaluation {
+  id             Int              @id @default(autoincrement())
+  submissionId   Int              @unique @map("submission_id")
+  fileId         Int              @unique @map("file_id")
+  score          Float?           @map("score")
+  status         AiScoreStatus    @default(PENDING) @map("status")
+  error          String?          @db.Text @map("error")
+  createdAt      DateTime         @default(now()) @map("created_at")
+  updatedAt      DateTime         @updatedAt @map("updated_at")
+
+  submission     FormSubmission   @relation(fields: [submissionId], references: [id], onDelete: Cascade)
+  file           File             @relation(fields: [fileId], references: [id], onDelete: Cascade)
+
+  @@map("cv_evaluations")
 }
 
 model SubmissionAnswer {

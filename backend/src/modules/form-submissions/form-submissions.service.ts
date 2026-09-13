@@ -42,12 +42,22 @@ export class FormSubmissionsService {
       }
     }
 
+    // Validate that the CV file exists
+    const file = await this.prisma.file.findUnique({ where: { id: dto.cvFileId } });
+    if (!file) {
+      throw new NotFoundException('CV file not found');
+    }
+
     const submission = await this.prisma.$transaction(async (tx) => {
       return tx.formSubmission.create({
         data: {
           formId: formId,
           email: dto.email,
-          cvFileId: dto.cvFileId,
+          cvEvaluation: {
+            create: {
+              fileId: dto.cvFileId,
+            },
+          },
           answers: {
             create: dto.answers.map((answer) => ({
               fieldId: answer.fieldId,
@@ -55,6 +65,14 @@ export class FormSubmissionsService {
               optionId: answer.optionId,
             })),
           },
+        },
+        include: {
+          cvEvaluation: {
+            include: {
+              file: true,
+            },
+          },
+          answers: true,
         },
       });
     });
@@ -88,7 +106,11 @@ export class FormSubmissionsService {
             option: true,
           },
         },
-        cvFile: true,
+        cvEvaluation: {
+          include: {
+            file: true,
+          },
+        },
       },
     });
 
@@ -112,7 +134,11 @@ export class FormSubmissionsService {
     return this.prisma.formSubmission.findMany({
       where: { formId },
       include: {
-        cvFile: true,
+        cvEvaluation: {
+          include: {
+            file: true,
+          },
+        },
         answers: true,
       },
     });
@@ -155,7 +181,11 @@ export class FormSubmissionsService {
       where: { id: submissionId },
       data: { status },
       include: {
-        cvFile: true,
+        cvEvaluation: {
+          include: {
+            file: true,
+          },
+        },
         answers: true,
       },
     });
@@ -198,17 +228,22 @@ export class FormSubmissionsService {
 
     const submission = await this.prisma.formSubmission.findFirst({
       where: { id: submissionId, formId },
+      include: { cvEvaluation: true },
     });
 
     if (!submission) {
       throw new NotFoundException('Submission not found');
     }
 
-    const updated = await this.prisma.formSubmission.update({
-      where: { id: submissionId },
+    if (!submission.cvEvaluation) {
+      throw new BadRequestException('No CV evaluation record found for this submission');
+    }
+
+    await this.prisma.cvEvaluation.update({
+      where: { submissionId },
       data: {
-        aiScoreStatus: 'PENDING',
-        aiError: null,
+        status: 'PENDING',
+        error: null,
       },
     });
 
@@ -218,6 +253,15 @@ export class FormSubmissionsService {
       });
     });
 
-    return updated;
+    return this.prisma.formSubmission.findUnique({
+      where: { id: submissionId },
+      include: {
+        cvEvaluation: {
+          include: {
+            file: true,
+          },
+        },
+      },
+    });
   }
 }

@@ -37,4 +37,5 @@
 - Always read and follow [`backend/DEVELOPMENT.md`](backend/DEVELOPMENT.md) before running, testing, or building services. Do NOT run ad-hoc scripts against `./dist`.
 
 ## Active Roadmaps & Checklists
-- **Backend Refactoring & Technical Debt**: Always consult [`backend/CHECKLIST.md`](backend/CHECKLIST.md) before making structural changes to submissions, CV handling, or AI evaluation.
+- **Backend Refactoring & Technical Debt**: Always consult [`backend/CHECKLIST.md`](backend/CHECKLIST.md) before making structural changes to submissions, CV handling, or AI evaluation. When an agent completes an item or section in the checklist, remove it from the checklist file.
+
