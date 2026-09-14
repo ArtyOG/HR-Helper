@@ -7,6 +7,7 @@ import { HealthController } from './common/health.controller';
 import { AuthModule } from './modules/auth/auth.module';
 import { AiModule } from './modules/ai/ai.module';
 import { ConfigModule } from '@nestjs/config/dist/config.module';
+import { EmailModule } from './modules/email/email.module';
 
 @Module({
   imports: [
