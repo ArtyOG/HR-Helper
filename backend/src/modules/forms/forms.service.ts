@@ -9,6 +9,11 @@ export class FormsService {
   constructor(private prisma: PrismaService) {}
 
   async create(userId: number, dto: CreateFormDto) {
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (!user) {
+      throw new NotFoundException(`User does not exist`);
+    }
+
     return this.prisma.form.create({
       data: {
         title: dto.title,
@@ -16,13 +21,15 @@ export class FormsService {
         requirements: dto.requirements,
         userId: userId,
         fields: {
-          create: dto.fields.map((field) => ({
+          create: dto.fields.map((field, fieldIdx) => ({
             label: field.label,
             type: field.type,
             required: field.required || false,
+            order: field.order ?? fieldIdx,
             options: {
-              create: field.options?.map((opt) => ({
+              create: field.options?.map((opt, optIdx) => ({
                 value: opt.value,
+                order: opt.order ?? optIdx,
               })),
             },
           })),
@@ -30,8 +37,11 @@ export class FormsService {
       },
       include: {
         fields: {
+          orderBy: { order: 'asc' },
           include: {
-            options: true,
+            options: {
+              orderBy: { order: 'asc' },
+            },
           },
         },
       },
@@ -49,9 +59,9 @@ export class FormsService {
       },
     });
 
-    return forms.map((form: typeof forms[number]) => ({
+    return forms.map(({ _count, ...form }) => ({
       ...form,
-      submissionCount: form._count.submissions,
+      submissionCount: _count.submissions,
     }));
   }
 
@@ -60,8 +70,11 @@ export class FormsService {
       where: { id },
       include: {
         fields: {
+          orderBy: { order: 'asc' },
           include: {
-            options: true,
+            options: {
+              orderBy: { order: 'asc' },
+            },
           },
         },
         _count: {
@@ -72,15 +85,19 @@ export class FormsService {
 
     if (!form) return null;
 
+    const { _count, ...formData } = form;
     return {
-      ...form,
-      submissionCount: form._count.submissions,
+      ...formData,
+      submissionCount: _count.submissions,
     };
   }
 
   async update(id: string, userId: number, dto: UpdateFormDto) {
     const form = await this.prisma.form.findUnique({ where: { id } });
-    if (!form || form.userId !== userId) {
+    if (!form) {
+      throw new NotFoundException('Form not found');
+    }
+    if (form.userId !== userId) {
       throw new ForbiddenException('You do not have permission to edit this form');
     }
 
@@ -106,13 +123,15 @@ export class FormsService {
           description: dto.description,
           requirements: dto.requirements,
           fields: {
-            create: dto.fields.map((field) => ({
+            create: dto.fields.map((field, fieldIdx) => ({
               label: field.label,
               type: field.type,
               required: field.required || false,
+              order: field.order ?? fieldIdx,
               options: {
-                create: field.options?.map((opt) => ({
+                create: field.options?.map((opt, optIdx) => ({
                   value: opt.value,
+                  order: opt.order ?? optIdx,
                 })),
               },
             })),
@@ -120,8 +139,11 @@ export class FormsService {
         },
         include: {
           fields: {
+            orderBy: { order: 'asc' },
             include: {
-              options: true,
+              options: {
+                orderBy: { order: 'asc' },
+              },
             },
           },
         },
@@ -130,11 +152,23 @@ export class FormsService {
   }
 
   async copy(id: string, userId: number) {
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (!user) {
+      throw new NotFoundException(`User does not exist`);
+    }
+
     const originalForm = await this.prisma.form.findUnique({
-        where: { id },
-        include: {
-            fields: { include: { options: true } }
-        }
+      where: { id },
+      include: {
+        fields: {
+          orderBy: { order: 'asc' },
+          include: {
+            options: {
+              orderBy: { order: 'asc' },
+            },
+          },
+        },
+      },
     });
     
     if (!originalForm) {
@@ -153,9 +187,11 @@ export class FormsService {
             label: field.label,
             type: field.type,
             required: field.required,
+            order: field.order,
             options: {
               create: field.options.map((opt: typeof field.options[number]) => ({
                 value: opt.value,
+                order: opt.order,
               })),
             },
           })),
@@ -163,8 +199,11 @@ export class FormsService {
       },
       include: {
         fields: {
+          orderBy: { order: 'asc' },
           include: {
-            options: true,
+            options: {
+              orderBy: { order: 'asc' },
+            },
           },
         },
       },
@@ -173,8 +212,11 @@ export class FormsService {
 
   async updateSchedule(id: string, userId: number, closeAt: string) {
     const form = await this.prisma.form.findUnique({ where: { id } });
-    if (!form || form.userId !== userId) {
-        throw new ForbiddenException('You do not have permission to update this form');
+    if (!form) {
+      throw new NotFoundException('Form not found');
+    }
+    if (form.userId !== userId) {
+      throw new ForbiddenException('You do not have permission to update this form');
     }
 
     return this.prisma.form.update({
@@ -188,8 +230,11 @@ export class FormsService {
 
   async delete(id: string, userId: number) {
     const form = await this.prisma.form.findUnique({ where: { id } });
-    if (!form || form.userId !== userId) {
-        throw new ForbiddenException('You do not have permission to delete this form');
+    if (!form) {
+      throw new NotFoundException('Form not found');
+    }
+    if (form.userId !== userId) {
+      throw new ForbiddenException('You do not have permission to delete this form');
     }
 
     try {

@@ -1,9 +1,14 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsString, IsNotEmpty, IsOptional, IsBoolean, IsArray, IsEnum, ValidateNested } from 'class-validator';
+import { IsString, IsNotEmpty, IsOptional, IsBoolean, IsArray, IsEnum, ValidateNested, IsNumber } from 'class-validator';
 import { Type } from 'class-transformer';
 import { FieldType } from '@prisma/client';
 
 class CreateOptionDto {
+  @ApiPropertyOptional()
+  @IsNumber()
+  @IsOptional()
+  order?: number;
+
   @ApiProperty()
   @IsString()
   @IsNotEmpty()
@@ -24,6 +29,11 @@ class CreateFieldDto {
   @IsBoolean()
   @IsOptional()
   required?: boolean;
+
+  @ApiPropertyOptional()
+  @IsNumber()
+  @IsOptional()
+  order?: number;
 
   @ApiPropertyOptional({ type: [CreateOptionDto] })
   @IsArray()
