@@ -1,13 +1,17 @@
-import { Injectable, BadRequestException, NotFoundException, ForbiddenException } from '@nestjs/common';
+import { Injectable, BadRequestException, NotFoundException, ForbiddenException, Logger } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { FormsService } from '../forms/forms.service';
+import { AiService } from '../ai/ai.service';
 import { SubmitFormDto } from './dto/submit-form.dto';
 
 @Injectable()
 export class FormSubmissionsService {
+  private readonly logger = new Logger(FormSubmissionsService.name);
+
   constructor(
     private prisma: PrismaService,
     private formsService: FormsService,
+    private aiService: AiService,
   ) {}
 
   async submit(formId: string, dto: SubmitFormDto) {
@@ -38,8 +42,8 @@ export class FormSubmissionsService {
       }
     }
 
-    return this.prisma.$transaction(async (tx) => {
-      const submission = await tx.formSubmission.create({
+    const submission = await this.prisma.$transaction(async (tx) => {
+      return tx.formSubmission.create({
         data: {
           formId: formId,
           email: dto.email,
@@ -53,8 +57,16 @@ export class FormSubmissionsService {
           },
         },
       });
-      return submission;
     });
+
+    // Trigger AI scoring in background without blocking response to client
+    setImmediate(() => {
+      this.aiService.processSubmission(submission.id).catch((err) => {
+        this.logger.error(`Background AI scoring error for submission ${submission.id}`, err);
+      });
+    });
+
+    return submission;
   }
 
   async findOne(id: string, userId: number) {
@@ -176,5 +188,36 @@ export class FormSubmissionsService {
     });
 
     return { count: submissionIds.length };
+  }
+
+  async rescore(formId: string, submissionId: number, userId: number) {
+    const form = await this.prisma.form.findUnique({ where: { id: formId } });
+    if (!form || form.userId !== userId) {
+      throw new ForbiddenException('You do not have permission to rescore submissions for this form');
+    }
+
+    const submission = await this.prisma.formSubmission.findFirst({
+      where: { id: submissionId, formId },
+    });
+
+    if (!submission) {
+      throw new NotFoundException('Submission not found');
+    }
+
+    const updated = await this.prisma.formSubmission.update({
+      where: { id: submissionId },
+      data: {
+        aiScoreStatus: 'PENDING',
+        aiError: null,
+      },
+    });
+
+    setImmediate(() => {
+      this.aiService.processSubmission(submissionId).catch((err) => {
+        this.logger.error(`Manual rescore failed for submission ${submissionId}`, err);
+      });
+    });
+
+    return updated;
   }
 }

@@ -22,11 +22,20 @@ enum SubmissionStatus {
   REJECTED
 }
 
+enum AiScoreStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+  SKIPPED
+}
+
 model User {
   id        Int      @id @default(autoincrement())
   email     String   @unique
   name      String?
   googleId String? @unique @map("google_id")
+  googleRefreshToken String? @map("google_refresh_token")
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -101,13 +110,15 @@ model Option {
 }
 
 model FormSubmission {
-  id        String   @id @default(uuid())
-  formId    String   @map("form_id")
-  cvFileId  Int      @unique @map("cv_file_id")
-  status    SubmissionStatus @default(PENDING)
-  cvScore   Float?           @map("cv_score")
-  email     String
-  createdAt DateTime @default(now()) @map("created_at")
+  id             Int              @id @default(autoincrement())
+  formId         String           @map("form_id")
+  cvFileId       Int              @unique @map("cv_file_id")
+  status         SubmissionStatus @default(PENDING)
+  cvScore        Float?           @map("cv_score")
+  aiScoreStatus  AiScoreStatus    @default(PENDING) @map("ai_score_status")
+  aiError        String?          @db.Text @map("ai_error")
+  email          String
+  createdAt      DateTime         @default(now()) @map("created_at")
 
   form          Form           @relation(fields: [formId], references: [id], onDelete: Cascade)
   cvFile        File           @relation(fields: [cvFileId], references: [id], onDelete: Cascade)
