@@ -126,7 +126,7 @@ export class AiService implements OnModuleInit {
     throw lastError || new Error('Failed to score CV with AI service after maximum retries');
   }
 
-  async processSubmission(submissionId: number): Promise<void> {
+  async processSubmission(submissionId: string): Promise<void> {
     if (!this.baseUrl) {
       this.logger.warn(`AI_SERVICE_URL is not configured. Marking submission ${submissionId} as FAILED.`);
       await this.safeUpdateSubmission(submissionId, {
@@ -202,7 +202,7 @@ export class AiService implements OnModuleInit {
     }
   }
 
-  private async safeUpdateSubmission(submissionId: number, data: any): Promise<void> {
+  private async safeUpdateSubmission(submissionId: string, data: any): Promise<void> {
     try {
       await this.prisma.formSubmission.update({
         where: { id: submissionId },

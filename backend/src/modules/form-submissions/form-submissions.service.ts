@@ -190,7 +190,7 @@ export class FormSubmissionsService {
     return { count: submissionIds.length };
   }
 
-  async rescore(formId: string, submissionId: number, userId: number) {
+  async rescore(formId: string, submissionId: string, userId: number) {
     const form = await this.prisma.form.findUnique({ where: { id: formId } });
     if (!form || form.userId !== userId) {
       throw new ForbiddenException('You do not have permission to rescore submissions for this form');
