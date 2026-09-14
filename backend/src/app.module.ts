@@ -7,6 +7,7 @@ import { HealthController } from './common/health.controller';
 import { AuthModule } from './modules/auth/auth.module';
 import { AiModule } from './modules/ai/ai.module';
 import { ConfigModule } from '@nestjs/config/dist/config.module';
+import { InterviewSlotsModule } from './modules/interview-slots/interview-slots.module';
 import { EmailModule } from './modules/email/email.module';
 
 @Module({
@@ -16,6 +17,7 @@ import { EmailModule } from './modules/email/email.module';
     AuthModule,
     FormsModule,
     FormSubmissionsModule,
+    InterviewSlotsModule,
     AiModule,
     ConfigModule.forRoot({ isGlobal: true }),
   ],
