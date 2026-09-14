@@ -85,6 +85,6 @@ export class FormSubmissionsController {
     @Param('formId') formId: string,
     @Param('submissionId') submissionId: string,
   ) {
-    return this.submissionsService.rescore(formId, Number(submissionId), req.user.id);
+    return this.submissionsService.rescore(formId, submissionId, req.user.id);
   }
 }

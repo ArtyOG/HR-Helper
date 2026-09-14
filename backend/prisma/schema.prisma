@@ -110,7 +110,7 @@ model Option {
 }
 
 model FormSubmission {
-  id             Int              @id @default(autoincrement())
+  id             String           @id @default(uuid())
   formId         String           @map("form_id")
   cvFileId       Int              @unique @map("cv_file_id")
   status         SubmissionStatus @default(PENDING)
