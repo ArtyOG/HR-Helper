@@ -1,4 +1,5 @@
 import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CreateFormDto } from './dto/create-form.dto';
 import { UpdateFormDto } from './dto/update-form.dto';
@@ -108,7 +109,7 @@ export class FormsService {
       throw new ForbiddenException('Cannot edit a form that has received submissions');
     }
 
-    return this.prisma.$transaction(async (tx) => {
+    return this.prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       // 1. Delete all existing fields (options will cascade delete)
       await tx.field.deleteMany({
         where: { formId: id },
@@ -182,13 +183,13 @@ export class FormsService {
         userId: userId,
         isOpen: false,
         fields: {
-          create: originalForm.fields.map((field) => ({
+          create: originalForm.fields.map((field: typeof originalForm.fields[number]) => ({
             label: field.label,
             type: field.type,
             required: field.required,
             order: field.order,
             options: {
-              create: field.options.map((opt) => ({
+              create: field.options.map((opt: typeof field.options[number]) => ({
                 value: opt.value,
                 order: opt.order,
               })),

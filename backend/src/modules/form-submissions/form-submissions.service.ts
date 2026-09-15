@@ -87,7 +87,7 @@ export class FormSubmissionsService {
     return submission;
   }
 
-  async findOne(id: number, userId: number) {
+  async findOne(id: string, userId: number) {
     const submission = await this.prisma.formSubmission.findUnique({
       where: { id },
       include: {
@@ -144,7 +144,7 @@ export class FormSubmissionsService {
     });
   }
   
-  async delete(submissionId: number, userId: number) {
+  async delete(submissionId: string, userId: number) {
     const submission = await this.prisma.formSubmission.findUnique({
       where: { id: submissionId },
       include: { form: true },
@@ -163,7 +163,7 @@ export class FormSubmissionsService {
     });
   }
 
-  async updateStatus(formId: string, submissionId: number, status: import('@prisma/client').SubmissionStatus, userId: number) {
+  async updateStatus(formId: string, submissionId: string, status: import('@prisma/client').SubmissionStatus, userId: number) {
     const submission = await this.prisma.formSubmission.findFirst({
       where: { id: submissionId, formId },
       include: { form: true },
@@ -191,7 +191,7 @@ export class FormSubmissionsService {
     });
   }
 
-  async bulkUpdateStatus(formId: string, submissionIds: number[], status: import('@prisma/client').SubmissionStatus, userId: number) {
+  async bulkUpdateStatus(formId: string, submissionIds: string[], status: import('@prisma/client').SubmissionStatus, userId: number) {
     const form = await this.prisma.form.findUnique({ where: { id: formId } });
     if (!form || form.userId !== userId) {
       throw new ForbiddenException('You do not have permission to update submissions for this form');
@@ -220,7 +220,7 @@ export class FormSubmissionsService {
     return { count: submissionIds.length };
   }
 
-  async rescore(formId: string, submissionId: number, userId: number) {
+  async rescore(formId: string, submissionId: string, userId: number) {
     const form = await this.prisma.form.findUnique({ where: { id: formId } });
     if (!form || form.userId !== userId) {
       throw new ForbiddenException('You do not have permission to rescore submissions for this form');

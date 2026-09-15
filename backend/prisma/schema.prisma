@@ -35,6 +35,7 @@ model User {
   email     String   @unique
   name      String?
   googleId String? @unique @map("google_id")
+  googleRefreshToken String? @map("google_refresh_token")
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -72,6 +73,7 @@ model Form {
   user      User     @relation(fields: [userId], references: [id])
   fields    Field[]
   submissions FormSubmission[]
+  interviewSlots InterviewSlot[]
 
   @@map("forms")
 }
@@ -108,15 +110,16 @@ model Option {
 }
 
 model FormSubmission {
-  id             Int              @id @default(autoincrement())
+  id             String           @id @default(uuid())
   formId         String           @map("form_id")
   status         SubmissionStatus @default(PENDING)
   email          String
   createdAt      DateTime         @default(now()) @map("created_at")
 
-  form           Form             @relation(fields: [formId], references: [id], onDelete: Cascade)
-  cvEvaluation   CvEvaluation?
-  answers        SubmissionAnswer[]
+  form          Form           @relation(fields: [formId], references: [id], onDelete: Cascade)
+  cvFile        File           @relation(fields: [cvFileId], references: [id], onDelete: Cascade)
+  answers       SubmissionAnswer[]
+  interviewSlot InterviewSlot?
 
   @@map("form_submissions")
 }
@@ -139,7 +142,7 @@ model CvEvaluation {
 
 model SubmissionAnswer {
   id             Int            @id @default(autoincrement())
-  submissionId   Int            @map("submission_id")
+  submissionId   String         @map("submission_id")
   fieldId        Int            @map("field_id")
   value          String?        
   optionId       Int?           @map("option_id") 
@@ -150,3 +153,27 @@ model SubmissionAnswer {
 
   @@map("submission_answers")
 }
+
+enum InterviewSlotStatus {
+  AVAILABLE
+  BOOKED
+  CANCELLED
+}
+
+model InterviewSlot {
+  id           Int                 @id @default(autoincrement())
+  formId       String              @map("form_id")
+  submissionId String?             @unique @map("submission_id")
+  startTime    DateTime            @map("start_time")
+  endTime      DateTime            @map("end_time")
+  status       InterviewSlotStatus @default(AVAILABLE)
+  meetingLink  String?             @map("meeting_link")
+  createdAt    DateTime            @default(now()) @map("created_at")
+  updatedAt    DateTime            @updatedAt @map("updated_at")
+
+  form         Form                @relation(fields: [formId], references: [id], onDelete: Cascade)
+  submission   FormSubmission?     @relation(fields: [submissionId], references: [id], onDelete: SetNull)
+
+  @@map("interview_slots")
+}
+

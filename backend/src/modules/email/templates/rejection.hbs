@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Update regarding your application</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background-color: #f7f8fa;
+            color: #1a1a1a;
+            margin: 0;
+            padding: 40px 16px;
+            -webkit-text-size-adjust: 100%;
+        }
+        .email-wrapper {
+            max-width: 560px;
+            margin: 0 auto;
+            background-color: #ffffff;
+            border-radius: 12px;
+            box-shadow: 0 4px 24px rgba(0, 0, 0, 0.04);
+            border: 1px solid #eaeef2;
+            overflow: hidden;
+        }
+        .email-header {
+            padding: 32px 40px 0 40px;
+        }
+        .company-logo {
+            font-size: 16px;
+            font-weight: 700;
+            letter-spacing: -0.3px;
+            color: #111111;
+        }
+        .email-body {
+            padding: 32px 40px 40px 40px;
+        }
+        p {
+            font-size: 15px;
+            line-height: 1.65;
+            margin: 0 0 20px 0;
+            color: #4b5563;
+        }
+        p.greeting {
+            color: #111111;
+            font-weight: 500;
+        }
+        .signature {
+            margin-top: 32px;
+            padding-top: 24px;
+            border-top: 1px solid #f0f2f5;
+            font-size: 14px;
+            color: #4b5563;
+            line-height: 1.6;
+        }
+        .signature strong {
+            color: #111111;
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body>
+    <div class="email-wrapper">
+        <div class="email-header">
+            <div class="company-logo">{{companyName}}</div>
+        </div>
+        <div class="email-body">
+            <p class="greeting">Hi {{candidateName}},</p>
+
+            <p>Thank you for taking the time to apply for the <strong>{{jobTitle}}</strong> position at <strong>{{companyName}}</strong>. It was a pleasure getting to know you and learning more about your background.</p>
+
+            <p>While we were genuinely impressed by your skills, we have decided to move forward with another candidate whose experience more closely matches our current needs for this role.</p>
+
+            <p>We deeply appreciate the effort you put into the interview process and your interest in joining our team. We wish you the absolute best in your career and future job search.</p>
+
+            <div class="signature">
+                Best regards,<br>
+                <strong>{{senderName}}</strong><br>
+                {{senderTitle}}, {{companyName}}
+            </div>
+        </div>
+    </div>
+</body>
+</html>

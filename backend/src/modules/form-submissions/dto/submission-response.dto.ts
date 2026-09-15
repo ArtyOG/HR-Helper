@@ -2,8 +2,8 @@ import { ApiProperty } from '@nestjs/swagger';
 import { CvEvaluationResponseDto } from './cv-evaluation-response.dto';
 
 export class SubmissionResponseDto {
-  @ApiProperty({ example: 1 })
-  id!: number;
+  @ApiProperty({ example: 'b1a2c3d4-e5f6-7890-abcd-ef1234567890' })
+  id!: string;
 
   @ApiProperty({ example: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11' })
   formId!: string;
