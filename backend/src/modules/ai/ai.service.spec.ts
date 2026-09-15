@@ -98,7 +98,27 @@ describe('AiService', () => {
   });
 
   describe('processSubmission', () => {
-    it('should skip scoring if submission has no cvFile', async () => {
+    it('should skip scoring if form has no requirements', async () => {
+      prisma.formSubmission.findUnique.mockResolvedValue({
+        id: 'sub-uuid-1',
+        cvFile: { key: 'documents/resume.pdf' },
+        form: { requirements: '' },
+      });
+
+      await service.processSubmission('sub-uuid-1');
+
+      expect(prisma.formSubmission.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { id: 'sub-uuid-1' },
+          data: expect.objectContaining({
+            aiScoreStatus: 'SKIPPED',
+            aiError: 'Form has no job requirements specified',
+          }),
+        }),
+      );
+    });
+
+    it('should mark scoring as FAILED if submission has no cvFile', async () => {
       prisma.formSubmission.findUnique.mockResolvedValue({
         id: 'sub-uuid-1',
         cvFile: null,
@@ -110,7 +130,10 @@ describe('AiService', () => {
       expect(prisma.formSubmission.update).toHaveBeenCalledWith(
         expect.objectContaining({
           where: { id: 'sub-uuid-1' },
-          data: expect.objectContaining({ aiScoreStatus: 'SKIPPED' }),
+          data: expect.objectContaining({
+            aiScoreStatus: 'FAILED',
+            aiError: 'CV file record not found in storage',
+          }),
         }),
       );
     });
@@ -132,7 +155,7 @@ describe('AiService', () => {
 
       await service.processSubmission('sub-uuid-1');
 
-      expect(s3Service.getPresignedDownloadUrl).toHaveBeenCalledWith('documents/resume.pdf', 300);
+      expect(s3Service.getPresignedDownloadUrl).toHaveBeenCalledWith('documents/resume.pdf', 900);
       expect(prisma.formSubmission.update).toHaveBeenCalledWith({
         where: { id: 'sub-uuid-1' },
         data: {
