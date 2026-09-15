@@ -34,12 +34,16 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Lowercase repository name for Docker registry
+        run: |
+          echo "REPO_LOWER=$(echo '${{ github.repository }}' | tr '[:upper:]' '[:lower:]')" >> $GITHUB_ENV
+
       # --- Backend Image ---
       - name: Extract metadata for Backend
         id: meta-backend
         uses: docker/metadata-action@v5
         with:
-          images: ghcr.io/${{ github.repository }}/backend
+          images: ghcr.io/${{ env.REPO_LOWER }}/backend
           tags: |
             type=raw,value=latest
             type=sha,format=short
@@ -59,7 +63,7 @@ jobs:
         id: meta-ai
         uses: docker/metadata-action@v5
         with:
-          images: ghcr.io/${{ github.repository }}/ai-service
+          images: ghcr.io/${{ env.REPO_LOWER }}/ai-service
           tags: |
             type=raw,value=latest
             type=sha,format=short
@@ -79,7 +83,7 @@ jobs:
         id: meta-frontend
         uses: docker/metadata-action@v5
         with:
-          images: ghcr.io/${{ github.repository }}/frontend
+          images: ghcr.io/${{ env.REPO_LOWER }}/frontend
           tags: |
             type=raw,value=latest
             type=sha,format=short
