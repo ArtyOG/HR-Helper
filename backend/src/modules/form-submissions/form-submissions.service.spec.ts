@@ -2,19 +2,26 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { BadRequestException, NotFoundException, ForbiddenException } from '@nestjs/common';
 import { FormSubmissionsService } from './form-submissions.service';
 import { FormsService } from '../forms/forms.service';
+import { AiService } from '../ai/ai.service';
 import { PrismaService } from '../../prisma/prisma.service';
-import { FieldType } from '@prisma/client';
+import { FieldType, SubmissionStatus } from '@prisma/client';
 
 describe('FormSubmissionsService', () => {
   let service: FormSubmissionsService;
   let formsService: {
     findOne: jest.Mock;
   };
+  let aiService: {
+    processSubmission: jest.Mock;
+  };
   let prisma: {
     formSubmission: {
       create: jest.Mock;
       findUnique: jest.Mock;
+      findFirst: jest.Mock;
       findMany: jest.Mock;
+      update: jest.Mock;
+      updateMany: jest.Mock;
       delete: jest.Mock;
     };
     form: {
@@ -28,11 +35,18 @@ describe('FormSubmissionsService', () => {
       findOne: jest.fn(),
     };
 
+    aiService = {
+      processSubmission: jest.fn().mockResolvedValue(undefined),
+    };
+
     prisma = {
       formSubmission: {
         create: jest.fn(),
         findUnique: jest.fn(),
+        findFirst: jest.fn(),
         findMany: jest.fn(),
+        update: jest.fn(),
+        updateMany: jest.fn(),
         delete: jest.fn(),
       },
       form: {
@@ -49,6 +63,10 @@ describe('FormSubmissionsService', () => {
           useValue: formsService,
         },
         {
+          provide: AiService,
+          useValue: aiService,
+        },
+        {
           provide: PrismaService,
           useValue: prisma,
         },
@@ -60,6 +78,7 @@ describe('FormSubmissionsService', () => {
 
   describe('submit', () => {
     const validDto = {
+      email: 'candidate@example.com',
       cvFileId: 101,
       answers: [
         { fieldId: 1, value: 'Jane Doe' },
@@ -131,8 +150,9 @@ describe('FormSubmissionsService', () => {
       });
 
       const mockCreatedSubmission = {
-        id: 1,
+        id: 'sub-uuid-101',
         formId: 'uuid-123',
+        email: 'candidate@example.com',
         cvFileId: 101,
         createdAt: new Date(),
       };
@@ -143,6 +163,7 @@ describe('FormSubmissionsService', () => {
       expect(prisma.formSubmission.create).toHaveBeenCalledWith({
         data: {
           formId: 'uuid-123',
+          email: 'candidate@example.com',
           cvFileId: 101,
           answers: {
             create: [
@@ -159,26 +180,69 @@ describe('FormSubmissionsService', () => {
   describe('findOne', () => {
     it('should return submission if user is the form creator', async () => {
       const mockSubmission = {
-        id: 1,
+        id: 'sub-uuid-101',
         formId: 'uuid-123',
         form: { userId: 42 },
       };
       prisma.formSubmission.findUnique.mockResolvedValue(mockSubmission);
 
-      const result = await service.findOne(1, 42);
+      const result = await service.findOne('sub-uuid-101', 42);
       expect(result).toEqual(mockSubmission);
     });
 
     it('should throw ForbiddenException if user does not own the form', async () => {
       const mockSubmission = {
-        id: 1,
+        id: 'sub-uuid-101',
         formId: 'uuid-123',
         form: { userId: 42 },
       };
       prisma.formSubmission.findUnique.mockResolvedValue(mockSubmission);
 
-      await expect(service.findOne(1, 99)).rejects.toThrow(
+      await expect(service.findOne('sub-uuid-101', 99)).rejects.toThrow(
         new ForbiddenException('You do not have permission to view this submission'),
+      );
+    });
+  });
+
+  describe('updateStatus', () => {
+    it('should update submission status if user owns the form', async () => {
+      const mockSubmission = {
+        id: 'sub-uuid-101',
+        formId: 'uuid-123',
+        form: { userId: 42 },
+      };
+      prisma.formSubmission.findFirst.mockResolvedValue(mockSubmission);
+      prisma.formSubmission.update.mockResolvedValue({
+        ...mockSubmission,
+        status: SubmissionStatus.APPROVED,
+      });
+
+      const result = await service.updateStatus(
+        'uuid-123',
+        'sub-uuid-101',
+        SubmissionStatus.APPROVED,
+        42,
+      );
+
+      expect(prisma.formSubmission.update).toHaveBeenCalledWith({
+        where: { id: 'sub-uuid-101' },
+        data: { status: SubmissionStatus.APPROVED },
+        include: { cvFile: true, answers: true },
+      });
+      expect(result.status).toEqual(SubmissionStatus.APPROVED);
+    });
+
+    it('should throw ForbiddenException if user is not the owner', async () => {
+      prisma.formSubmission.findFirst.mockResolvedValue({
+        id: 'sub-uuid-101',
+        formId: 'uuid-123',
+        form: { userId: 42 },
+      });
+
+      await expect(
+        service.updateStatus('uuid-123', 'sub-uuid-101', SubmissionStatus.APPROVED, 99),
+      ).rejects.toThrow(
+        new ForbiddenException('You do not have permission to update this submission'),
       );
     });
   });

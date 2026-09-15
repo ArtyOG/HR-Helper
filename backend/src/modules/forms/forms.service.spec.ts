@@ -7,6 +7,9 @@ import { FieldType } from '@prisma/client';
 describe('FormsService', () => {
   let service: FormsService;
   let prisma: {
+    user: {
+      findUnique: jest.Mock;
+    };
     form: {
       create: jest.Mock;
       findMany: jest.Mock;
@@ -21,6 +24,12 @@ describe('FormsService', () => {
       deleteMany: jest.Mock;
     };
     $transaction: jest.Mock;
+  };
+
+  const mockUser = {
+    id: 1,
+    email: 'hr@example.com',
+    name: 'HR Manager',
   };
 
   const mockForm = {
@@ -39,6 +48,7 @@ describe('FormsService', () => {
         label: 'Full Name',
         type: FieldType.TEXT,
         required: true,
+        order: 0,
         options: [],
       },
     ],
@@ -47,6 +57,9 @@ describe('FormsService', () => {
 
   beforeEach(async () => {
     prisma = {
+      user: {
+        findUnique: jest.fn().mockResolvedValue(mockUser),
+      },
       form: {
         create: jest.fn(),
         findMany: jest.fn(),
@@ -95,6 +108,7 @@ describe('FormsService', () => {
 
       const result = await service.create(1, dto);
 
+      expect(prisma.user.findUnique).toHaveBeenCalledWith({ where: { id: 1 } });
       expect(prisma.form.create).toHaveBeenCalledWith({
         data: {
           title: dto.title,
@@ -107,6 +121,7 @@ describe('FormsService', () => {
                 label: 'Full Name',
                 type: FieldType.TEXT,
                 required: true,
+                order: 0,
                 options: {
                   create: undefined,
                 },
@@ -116,13 +131,27 @@ describe('FormsService', () => {
         },
         include: {
           fields: {
+            orderBy: { order: 'asc' },
             include: {
-              options: true,
+              options: {
+                orderBy: { order: 'asc' },
+              },
             },
           },
         },
       });
       expect(result.id).toEqual('uuid-123');
+    });
+
+    it('should throw NotFoundException if user does not exist', async () => {
+      prisma.user.findUnique.mockResolvedValue(null);
+
+      await expect(
+        service.create(999, {
+          title: 'Title',
+          fields: [],
+        }),
+      ).rejects.toThrow(new NotFoundException('User does not exist'));
     });
   });
 
@@ -180,9 +209,19 @@ describe('FormsService', () => {
 
       const result = await service.copy('uuid-123', 1);
 
+      expect(prisma.user.findUnique).toHaveBeenCalledWith({ where: { id: 1 } });
       expect(prisma.form.findUnique).toHaveBeenCalledWith({
         where: { id: 'uuid-123' },
-        include: { fields: { include: { options: true } } },
+        include: {
+          fields: {
+            orderBy: { order: 'asc' },
+            include: {
+              options: {
+                orderBy: { order: 'asc' },
+              },
+            },
+          },
+        },
       });
       expect(prisma.form.create).toHaveBeenCalledWith(
         expect.objectContaining({
