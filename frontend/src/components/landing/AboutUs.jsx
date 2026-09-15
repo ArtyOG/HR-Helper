@@ -1,4 +1,6 @@
-﻿function Badge({ children }) {
+import { useNavigation } from '../../context/NavigationContext';
+
+function Badge({ children }) {
   return (
     <span className="inline-flex items-center rounded-full bg-plum px-5 py-2 text-xs font-semibold uppercase tracking-wide text-white">
       {children}
@@ -56,12 +58,13 @@ const beliefs = [
 ];
 
 function AboutUs() {
+  const { goToLogin } = useNavigation();
   return (
     <section id="about" className="bg-white py-20 lg:py-24">
       <div className="mx-auto max-w-site px-6 lg:px-8">
         <div className="rounded-[59px] bg-[#F2F0E8] px-6 py-16 sm:px-12 lg:px-16">
           <Badge>ABOUT HiORing</Badge>
-          <h2 className="mt-6 font-serif text-4xl font-bold leading-tight tracking-tight text-plum sm:text-5xl">
+          <h2 className="mt-6 font-sans text-4xl font-bold leading-tight tracking-tight text-plum sm:text-5xl">
             We turned a messy hiring inbox into a calm, ranked pipeline.
           </h2>
           <p className="mt-6 text-justify text-lg leading-relaxed text-plum/80">
@@ -76,10 +79,10 @@ function AboutUs() {
                 key={stat.label}
                 className="rounded-[59px] bg-plum px-6 py-10 text-center"
               >
-                <p className="font-serif text-4xl font-bold text-gold sm:text-5xl">
+                <p className="font-sans text-4xl font-bold text-gold sm:text-5xl">
                   {stat.value}
                 </p>
-                <p className="mx-auto mt-3 max-w-[10rem] text-sm font-medium leading-snug text-ice/90">
+                <p className="mx-auto mt-3 max-w-[10rem] text-sm font-medium leading-snug text-white/90">
                   {stat.label}
                 </p>
               </div>
@@ -90,7 +93,7 @@ function AboutUs() {
         <div className="mt-20 grid gap-12 lg:grid-cols-2 lg:gap-16">
           <div>
             <p className="text-sm font-bold uppercase tracking-widest text-teal">Our Story</p>
-            <h2 className="mt-4 font-serif text-3xl font-bold leading-tight tracking-tight text-plum sm:text-4xl">
+            <h2 className="mt-4 font-sans text-3xl font-bold leading-tight tracking-tight text-plum sm:text-4xl">
               Built by people who were tired of the pile
             </h2>
             <p className="mt-5 text-justify text-base leading-relaxed text-stone-600">
@@ -109,15 +112,15 @@ function AboutUs() {
 
           <div className="flex flex-col justify-center rounded-[59px] bg-plum p-8 text-white sm:p-12">
             <div className="flex items-center gap-5">
-              <span className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-gold font-serif text-2xl font-bold text-plum">
+              <span className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-gold font-sans text-2xl font-bold text-plum">
                 K
               </span>
               <div>
-                <p className="font-serif text-xl font-bold text-white">Co-founder</p>
-                <p className="text-sm text-ice/70">HiORing</p>
+                <p className="font-sans text-xl font-bold text-white">Co-founder</p>
+                <p className="text-sm text-white/70">HiORing</p>
               </div>
             </div>
-            <blockquote className="mt-6 border-l-4 border-gold pl-5 font-serif text-xl font-medium leading-relaxed text-ice sm:text-2xl">
+            <blockquote className="mt-6 border-l-4 border-gold pl-5 font-sans text-xl font-medium leading-relaxed  sm:text-2xl">
               &ldquo;We&rsquo;re not trying to replace recruiters. We&rsquo;re trying to give
               them their week back.&rdquo;
             </blockquote>
@@ -126,7 +129,7 @@ function AboutUs() {
 
         <div className="mt-20">
           <p className="text-sm font-bold uppercase tracking-widest text-teal">The Journey</p>
-          <h2 className="mt-4 font-serif text-4xl font-bold leading-tight tracking-tight text-plum sm:text-5xl">
+          <h2 className="mt-4 font-sans text-4xl font-bold leading-tight tracking-tight text-plum sm:text-5xl">
             How we got there
           </h2>
 
@@ -144,7 +147,7 @@ function AboutUs() {
                   <p className="mt-6 text-sm font-bold uppercase tracking-widest text-teal">
                     {item.year}
                   </p>
-                  <h3 className="mt-1 min-h-[2.5em] font-serif text-2xl font-bold leading-tight text-plum">
+                  <h3 className="mt-1 min-h-[2.5em] font-sans text-2xl font-bold leading-tight text-plum">
                     {item.label}
                   </h3>
                   <p className="mt-3 max-w-xs text-justify text-base leading-relaxed text-stone-600">
@@ -158,7 +161,7 @@ function AboutUs() {
 
         <div className="mt-20">
           <p className="text-sm font-bold uppercase tracking-widest text-teal">Our Values</p>
-          <h2 className="mt-4 font-serif text-4xl font-bold leading-tight tracking-tight text-plum sm:text-5xl">
+          <h2 className="mt-4 font-sans text-4xl font-bold leading-tight tracking-tight text-plum sm:text-5xl">
             What we believe
           </h2>
 
@@ -168,10 +171,10 @@ function AboutUs() {
                 key={belief.title}
                 className="flex h-full flex-col rounded-[28px] border border-plum/10 bg-[#F2F0E8] p-8 transition hover:-translate-y-1 hover:shadow-xl hover:shadow-plum/10"
               >
-                <span className="flex h-12 w-12 items-center justify-center rounded-full bg-plum font-serif text-lg font-bold text-ice">
+                <span className="flex h-12 w-12 items-center justify-center rounded-full bg-plum font-sans text-lg font-bold text-white">
                   {String(index + 1).padStart(2, '0')}
                 </span>
-                <h3 className="mt-6 font-serif text-2xl font-bold leading-snug text-plum">
+                <h3 className="mt-6 font-sans text-2xl font-bold leading-snug text-plum">
                   {belief.title}
                 </h3>
                 <p className="mt-3 text-justify text-base leading-relaxed text-stone-600">
@@ -183,19 +186,20 @@ function AboutUs() {
         </div>
 
         <div className="mt-20 rounded-[59px] bg-[#F2F0E8] px-6 py-16 text-center sm:px-12">
-          <h2 className="font-serif text-3xl font-bold leading-tight tracking-tight text-plum sm:text-4xl">
+          <h2 className="font-sans text-3xl font-bold leading-tight tracking-tight text-plum sm:text-4xl">
             Want to see HiORing on your own hiring pipeline?
           </h2>
           <p className="mt-4 text-lg text-plum/80">
             Start free &mdash; no credit card required.
           </p>
           <div className="mt-8 flex flex-col items-center justify-center gap-4 sm:flex-row">
-            <a
-              href="#signup"
+            <button
+              type="button"
+              onClick={goToLogin}
               className="w-full rounded-xl bg-plum px-8 py-4 text-base font-semibold text-white transition hover:bg-plum-dark sm:w-auto"
             >
               Start free trial
-            </a>
+            </button>
             <a
               href="#support"
               className="w-full rounded-xl border-2 border-plum/30 bg-white px-8 py-4 text-base font-semibold text-plum transition hover:border-plum sm:w-auto"

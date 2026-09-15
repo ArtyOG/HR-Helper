@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import Navbar from '../components/landing/Navbar';
 import Hero from '../components/landing/Hero';
 import StatsBar from '../components/landing/StatsBar';
@@ -12,10 +13,13 @@ import SupportPolicy from '../components/landing/SupportPolicy';
 import Footer from '../components/landing/Footer';
 
 function LandingPage() {
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
   return (
-    <div className="min-h-screen bg-white font-sans text-stone-800 antialiased">
+    <div className="flex min-h-screen flex-col bg-[#F2F0E8] font-sans text-stone-800 antialiased">
       <Navbar />
-      <main>
+      <main className="flex-grow">
         <Hero />
         <StatsBar />
         <AboutUs />

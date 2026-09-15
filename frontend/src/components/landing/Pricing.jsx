@@ -49,12 +49,15 @@ function CheckIcon() {
   );
 }
 
+import { useNavigation } from '../../context/NavigationContext';
+
 function Pricing() {
+  const { goToLogin } = useNavigation();
   return (
     <section id="pricing" className="bg-white py-24 lg:py-32">
       <div className="mx-auto max-w-site px-6 lg:px-8">
         <div className="mx-auto max-w-3xl text-center">
-          <h2 className="font-serif text-4xl font-bold tracking-tight text-plum sm:text-5xl">
+          <h2 className="font-sans text-4xl font-bold tracking-tight text-plum sm:text-5xl">
             Simple pricing, no per-CV surprises
           </h2>
           <p className="mt-5 text-lg leading-relaxed text-stone-600">
@@ -78,7 +81,7 @@ function Pricing() {
 
               <h3 className="text-sm font-bold uppercase tracking-widest text-teal">{plan.name}</h3>
               <div className="mt-4 flex items-baseline gap-2">
-                <span className="font-serif text-5xl font-bold text-plum">{plan.price}</span>
+                <span className="font-sans text-5xl font-bold text-plum">{plan.price}</span>
                 {plan.period && (
                   <span className="text-sm font-medium text-stone-500">/ {plan.period}</span>
                 )}
@@ -94,8 +97,9 @@ function Pricing() {
                 ))}
               </ul>
 
-              <a
-                href="#signup"
+              <button
+                type="button"
+                onClick={goToLogin}
                 className={`mt-auto inline-block rounded-xl px-6 py-3.5 text-center text-sm font-semibold transition ${
                   plan.featured
                     ? 'bg-plum text-white hover:bg-plum-dark'
@@ -103,7 +107,7 @@ function Pricing() {
                 }`}
               >
                 {plan.cta}
-              </a>
+              </button>
             </article>
           ))}
         </div>

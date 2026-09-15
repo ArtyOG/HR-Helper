@@ -26,7 +26,7 @@ function SupportFaq() {
     <section id="support-faq" className="bg-[#F2F0E8] py-20 lg:py-24">
       <div className="mx-auto max-w-site px-6 lg:px-8">
         <div className="text-center">
-          <h2 className="font-serif text-4xl font-bold leading-tight tracking-tight text-plum sm:text-5xl">
+          <h2 className="font-sans text-4xl font-bold leading-tight tracking-tight text-plum sm:text-5xl">
             Frequently asked questions
           </h2>
           <p className="mx-auto mt-4 max-w-2xl text-lg text-plum/80">
@@ -40,7 +40,7 @@ function SupportFaq() {
               key={faq.question}
               className="rounded-[34px] bg-plum p-8 transition hover:-translate-y-1 hover:shadow-xl hover:shadow-plum/20"
             >
-              <h3 className="font-serif text-2xl font-bold leading-snug text-white">
+              <h3 className="font-sans text-2xl font-bold leading-snug text-white">
                 {faq.question}
               </h3>
               <p className="mt-4 text-sm font-light leading-relaxed text-[#FFFEF9]">

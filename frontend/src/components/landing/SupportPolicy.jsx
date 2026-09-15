@@ -2,7 +2,7 @@ function SupportPolicy() {
   return (
     <section id="support-policy" className="bg-[#F2F0E8] py-20 lg:py-24">
       <div className="mx-auto flex max-w-site flex-col items-center px-6 text-center lg:px-8">
-        <h2 className="font-serif text-4xl font-bold leading-tight tracking-tight text-plum sm:text-5xl">
+        <h2 className="font-sans text-4xl font-bold leading-tight tracking-tight text-plum sm:text-5xl">
           Didn&rsquo;t find what you needed?
         </h2>
         <p className="mx-auto mt-4 max-w-2xl text-lg text-plum/80">

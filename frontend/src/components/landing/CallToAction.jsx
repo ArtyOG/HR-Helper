@@ -13,10 +13,10 @@ function CallToAction() {
           />
 
           <div className="relative mx-auto max-w-3xl">
-            <h2 className="font-serif text-4xl font-bold tracking-tight text-white sm:text-5xl">
+            <h2 className="font-sans text-4xl font-bold tracking-tight text-white sm:text-5xl">
               Stop sorting CVs by hand.
             </h2>
-            <p className="mt-5 text-justify text-lg leading-relaxed text-ice/90">
+            <p className="mt-5 text-justify text-lg leading-relaxed text-white/90">
               Set up your first role in under five minutes &mdash; HiORing takes it from there.
             </p>
 
@@ -35,7 +35,7 @@ function CallToAction() {
               </a>
             </div>
 
-            <p className="mt-6 text-sm text-ice/75">
+            <p className="mt-6 text-sm text-white/75">
               No credit card required &middot; Free for your first 25 CVs
             </p>
           </div>

@@ -12,7 +12,7 @@ const steps = [
     label: 'Step 1',
     title: 'Generate a secure application link',
     body:
-      'Create a unique form for each job listing. Candidates fill in their details and upload a resume in PDF or DOCX \u2014 no account needed on their end.',
+      'Create a unique form for each job listing. Candidates fill in their details and upload a resume in PDF \u2014 no account needed on their end.',
   },
   {
     number: '2',
@@ -31,7 +31,7 @@ const steps = [
   {
     number: '4',
     label: 'Step 4',
-    title: 'Schedule, send, done',
+    title: 'Schedule, Send, Done',
     body:
       'Pick an interview time and HiOring sends the customized invite directly \u2014 and every candidate gets an automatic status update, whatever the outcome.',
   },
@@ -42,7 +42,7 @@ function Steps() {
     <section id="how-it-works" className="bg-white py-20 lg:py-24">
       <div className="mx-auto max-w-site px-6 lg:px-8">
         <Badge>HOW IT WORKS</Badge>
-        <h2 className="mt-6 max-w-3xl font-serif text-4xl font-bold leading-tight tracking-tight text-plum sm:text-5xl">
+        <h2 className="mt-6 max-w-3xl font-sans text-4xl font-bold leading-tight tracking-tight text-plum sm:text-5xl">
           From job link to interview, on one thread
         </h2>
         <p className="mt-5 max-w-3xl text-justify text-lg leading-relaxed text-stone-600">
@@ -67,7 +67,7 @@ function Steps() {
               </span>
               <div>
                 <p className="text-sm font-bold uppercase tracking-widest text-teal">{step.label}</p>
-                <h3 className="mt-1 font-serif text-2xl font-bold text-plum">{step.title}</h3>
+                <h3 className="mt-1 font-sans text-2xl font-bold text-plum">{step.title}</h3>
                 <p className="mt-3 max-w-2xl text-justify text-base leading-relaxed text-stone-600">
                   {step.body}
                 </p>

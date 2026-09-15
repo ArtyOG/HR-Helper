@@ -1,9 +1,10 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { useNavigation } from '../../context/NavigationContext';
 
 const links = [
+  { label: 'Home', href: '#top' },
   { label: 'Features', href: '#features' },
   { label: 'How it works', href: '#how-it-works' },
-  { label: 'Pricing', href: '#pricing' },
   { label: 'About Us', href: '#about' },
   { label: 'Support', href: '#support' },
 ];
@@ -11,11 +12,11 @@ const links = [
 function Logo() {
   return (
     <a href="#top" className="flex items-center gap-3">
-      <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-gold font-serif text-2xl font-bold text-plum shadow-sm">
+      <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-gold font-sans text-2xl font-bold text-plum shadow-sm">
         H
       </span>
       <span className="flex flex-col">
-        <span className="font-serif text-2xl font-bold leading-none text-plum">HiORing</span>
+        <span className="font-sans text-2xl font-bold leading-none text-plum">HiORing</span>
         <span className="mt-1 h-[3px] w-10 rounded-full bg-teal" />
       </span>
     </a>
@@ -23,12 +24,28 @@ function Logo() {
 }
 
 function Navbar() {
+  const { goToLogin, goToSignup } = useNavigation();
   const [open, setOpen] = useState(false);
+  const [rendered, setRendered] = useState(false);
+  const [visible, setVisible] = useState(false);
   const [pill, setPill] = useState({ x: 0, w: 0, visible: false });
   const [authHovered, setAuthHovered] = useState(null);
   const [authPill, setAuthPill] = useState({ x: 0, w: 0, ready: false });
   const loginRef = useRef(null);
   const signupRef = useRef(null);
+
+  useEffect(() => {
+    if (open) {
+      setRendered(true);
+      const id = requestAnimationFrame(() => {
+        requestAnimationFrame(() => setVisible(true));
+      });
+      return () => cancelAnimationFrame(id);
+    }
+    setVisible(false);
+    const timeout = setTimeout(() => setRendered(false), 300);
+    return () => clearTimeout(timeout);
+  }, [open]);
 
   const moveAuthPill = (ref) => {
     if (!ref.current) return;
@@ -44,8 +61,15 @@ function Navbar() {
 
   useEffect(() => {
     const hidePill = () => setPill((p) => ({ ...p, x: 0, w: 0, visible: false }));
+    const handleScroll = () => setOpen(false);
     window.addEventListener('resize', hidePill);
-    return () => window.removeEventListener('resize', hidePill);
+    window.addEventListener('scroll', handleScroll, { passive: true, capture: true });
+    document.addEventListener('scroll', handleScroll, { passive: true, capture: true });
+    return () => {
+      window.removeEventListener('resize', hidePill);
+      window.removeEventListener('scroll', handleScroll, true);
+      document.removeEventListener('scroll', handleScroll, true);
+    };
   }, []);
 
   const handleLinkEnter = (event) => {
@@ -70,7 +94,7 @@ function Navbar() {
           <span
             aria-hidden="true"
             style={{ transform: `translateX(${pill.x}px)`, width: `${pill.w}px` }}
-            className={`absolute inset-y-0 rounded-full bg-ice transition-[transform,width,opacity] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] motion-reduce:transition-none ${
+            className={`absolute inset-y-0 rounded-full bg-[#DAD7CD] transition-[transform,width,opacity] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] motion-reduce:transition-none ${
               pill.visible ? 'opacity-100' : 'opacity-0'
             }`}
           />
@@ -87,12 +111,6 @@ function Navbar() {
         </div>
 
         <div className="hidden items-center gap-2 lg:flex">
-          <a
-            href="#support"
-            className="hidden rounded-full px-4 py-2 text-sm font-medium text-stone-600 transition hover:text-plum xl:block"
-          >
-            Download App
-          </a>
           <div
             className="relative flex items-center gap-1"
             onMouseLeave={() => {
@@ -107,9 +125,10 @@ function Navbar() {
                 authPill.ready ? 'opacity-100' : 'opacity-0'
               }`}
             />
-            <a
+            <button
               ref={loginRef}
-              href="#login"
+              type="button"
+              onClick={goToLogin}
               onMouseEnter={() => {
                 setAuthHovered('login');
                 moveAuthPill(loginRef);
@@ -119,10 +138,11 @@ function Navbar() {
               }`}
             >
               Login
-            </a>
-            <a
+            </button>
+            <button
               ref={signupRef}
-              href="#signup"
+              type="button"
+              onClick={goToSignup}
               onMouseEnter={() => {
                 setAuthHovered('signup');
                 moveAuthPill(signupRef);
@@ -131,8 +151,8 @@ function Navbar() {
                 authHovered === 'login' ? 'text-plum' : 'text-white'
               }`}
             >
-              Start a free trial
-            </a>
+              Sign Up
+            </button>
           </div>
         </div>
 
@@ -152,8 +172,12 @@ function Navbar() {
         </button>
       </header>
 
-      {open && (
-        <div className="absolute left-4 right-4 top-full mt-3 overflow-hidden rounded-3xl border border-plum/10 bg-white/95 px-6 pb-6 pt-4 shadow-xl backdrop-blur-md lg:hidden">
+      {rendered && (
+        <div
+          className={`absolute left-4 right-4 top-full z-40 mt-3 overflow-hidden rounded-3xl border border-plum/10 bg-white/95 px-6 pb-6 pt-4 shadow-xl backdrop-blur-md transition-all duration-500 ease-out lg:hidden ${
+            visible ? 'translate-y-0 opacity-100' : '-translate-y-8 opacity-0'
+          }`}
+        >
           <div className="flex flex-col">
             {links.map((link) => (
               <a
@@ -167,18 +191,26 @@ function Navbar() {
             ))}
           </div>
           <div className="mt-4 flex gap-3">
-            <a
-              href="#login"
+            <button
+              type="button"
+              onClick={() => {
+                setOpen(false);
+                goToLogin();
+              }}
               className="flex-1 rounded-full border border-plum/30 px-4 py-2.5 text-center text-sm font-semibold text-plum"
             >
               Login
-            </a>
-            <a
-              href="#signup"
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setOpen(false);
+                goToSignup();
+              }}
               className="flex-1 rounded-full bg-plum px-4 py-2.5 text-center text-sm font-semibold text-white"
             >
-              Start a free trial
-            </a>
+              Sign Up
+            </button>
           </div>
         </div>
       )}

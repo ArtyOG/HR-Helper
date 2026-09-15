@@ -1,6 +1,9 @@
 import heroImage from '../../assets/2-ppl-working.svg';
+import { useNavigation } from '../../context/NavigationContext';
 
 function Hero() {
+  const { goToLogin } = useNavigation();
+
   return (
     <section id="top" className="relative overflow-hidden bg-[#F2F0E8]">
       <div>
@@ -9,12 +12,12 @@ function Hero() {
             <span className="inline-flex items-center rounded-full bg-plum px-5 py-2 text-xs font-semibold uppercase tracking-wide text-white">
               Built for hiring team in Cambodia
             </span>
-            <h1 className="mt-6 font-serif text-5xl font-bold leading-[1.05] tracking-tight text-plum sm:text-6xl lg:text-7xl">
+            <h1 className="mt-6 font-sans text-5xl font-bold leading-[1.05] tracking-tight text-plum sm:text-6xl lg:text-7xl">
               Never leave a
               <br />
               candidate
               <br />
-              on read
+              <span className="text-[#588157]">on read</span>.
             </h1>
             <p className="mt-7 max-w-xl text-justify text-lg leading-relaxed text-plum/80">
               HiOring screens and ranks every resume against your job requirements, then keeps
@@ -23,17 +26,18 @@ function Hero() {
             </p>
 
             <div className="mt-9 flex flex-wrap items-center gap-4">
-              <a
-                href="#signup"
+              <button
+                type="button"
+                onClick={goToLogin}
                 className="rounded-[20px] bg-plum px-8 py-4 text-base font-semibold text-white shadow-lg shadow-plum/20 transition hover:bg-plum-dark"
               >
                 Create hiring form
-              </a>
+              </button>
               <a
                 href="#how-it-works"
                 className="group inline-flex items-center gap-2 rounded-[20px] border border-plum/20 bg-white px-8 py-4 text-base font-semibold text-plum transition hover:border-plum"
               >
-                see how it works
+                See how it works
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-4 w-4 transition group-hover:translate-x-0.5">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M5 12h14M13 5l7 7-7 7" />
                 </svg>

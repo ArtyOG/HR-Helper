@@ -25,7 +25,7 @@ function PainPoints() {
     <section id="problem" className="bg-white py-20 lg:py-24">
       <div className="mx-auto max-w-site px-6 lg:px-8">
         <Badge>The problem</Badge>
-        <h2 className="mt-6 max-w-3xl font-serif text-4xl font-bold leading-tight tracking-tight text-plum sm:text-5xl">
+        <h2 className="mt-6 max-w-3xl font-sans text-4xl font-bold leading-tight tracking-tight text-plum sm:text-5xl">
           Hiring goes quiet. Candidates stop waiting &mdash; and start assuming the worst.
         </h2>
         <p className="mt-5 max-w-3xl text-justify text-lg leading-relaxed text-stone-600">
@@ -35,8 +35,8 @@ function PainPoints() {
 
         <div className="mt-14 grid gap-8 lg:grid-cols-2">
           <div className="rounded-[20px] bg-[#F2F0E8] p-8 sm:p-10">
-            <p className="font-serif text-2xl font-bold text-stone-500">Without HiORing</p>
-            <p className="mt-4 font-serif text-xl font-bold text-stone-700">The manual pile</p>
+            <p className="font-sans text-2xl font-bold text-stone-500">Without HiORing</p>
+            <p className="mt-4 font-sans text-xl font-bold text-stone-700">The manual pile</p>
             <ul className="mt-6 space-y-4">
               {withoutPoints.map((point) => (
                 <li key={point} className="flex items-start gap-3 text-base text-stone-600">
@@ -52,11 +52,11 @@ function PainPoints() {
           </div>
 
           <div className="rounded-[20px] bg-plum p-8 text-white sm:p-10">
-            <p className="font-serif text-2xl font-bold text-gold">With HiORing</p>
-            <p className="mt-4 font-serif text-xl font-bold text-white">The ranked queue</p>
+            <p className="font-sans text-2xl font-bold text-gold">With HiORing</p>
+            <p className="mt-4 font-sans text-xl font-bold text-white">The ranked queue</p>
             <ul className="mt-6 space-y-4">
               {withPoints.map((point) => (
-                <li key={point} className="flex items-start gap-3 text-base text-ice/90">
+                <li key={point} className="flex items-start gap-3 text-base text-white/90">
                   <span className="mt-[0.65em] flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-teal text-white">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="h-2.5 w-2.5">
                       <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
