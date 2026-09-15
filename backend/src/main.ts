@@ -11,7 +11,9 @@ async function bootstrap() {
     origin: process.env.FRONTEND_URL ?? 'http://localhost:5173',
     credentials: true,
   });
-  app.setGlobalPrefix("api");
+  app.setGlobalPrefix("api", {
+    exclude: ['auth', 'auth/{*path}'],
+  });
   const swaggerConfig = new DocumentBuilder()
     .setTitle("HR Helper API")
     .setDescription("API for the HR Helper application")
