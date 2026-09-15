@@ -74,6 +74,26 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
+      # --- Frontend Image ---
+      - name: Extract metadata for Frontend
+        id: meta-frontend
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/${{ github.repository }}/frontend
+          tags: |
+            type=raw,value=latest
+            type=sha,format=short
+
+      - name: Build & Push Frontend Docker Image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./frontend
+          push: true
+          tags: ${{ steps.meta-frontend.outputs.tags }}
+          labels: ${{ steps.meta-frontend.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
   migrate-database:
     name: Run Database Migrations
     runs-on: ubuntu-latest
@@ -93,12 +113,18 @@ jobs:
           cache-dependency-path: backend/package-lock.json
 
       - name: Install dependencies
-        run: npm ci
+        run: npm install
 
       - name: Apply Prisma Migrations
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
-        run: npx prisma migrate deploy
+        run: |
+          if [ -n "$DATABASE_URL" ]; then
+            echo "Applying Prisma migrations to production database..."
+            npx prisma migrate deploy
+          else
+            echo "DATABASE_URL secret is not configured in GitHub Secrets. Skipping production migrations."
+          fi
 
   deploy-services:
     name: Deploy Services & Verify Health
