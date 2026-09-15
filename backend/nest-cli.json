@@ -6,7 +6,7 @@
     "plugins": ["@nestjs/swagger"],
     "assets": [
       {
-        "include": "modules/email/template/**/*",
+        "include": "modules/email/templates/**/*",
         "watchAssets": true
       }
     ]
