@@ -1,0 +1,5 @@
+-- AlterTable
+ALTER TABLE `fields` ADD COLUMN `order` INTEGER NOT NULL DEFAULT 0;
+
+-- AlterTable
+ALTER TABLE `options` ADD COLUMN `order` INTEGER NOT NULL DEFAULT 0;

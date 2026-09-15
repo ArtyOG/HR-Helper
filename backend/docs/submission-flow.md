@@ -6,7 +6,7 @@ This document outlines the required steps for a candidate to submit a form via t
 The application requires that all CVs are uploaded via a pre-signed S3 URL to ensure privacy and security.
 
 **Step A: Request a pre-signed upload URL**
-- **Endpoint**: `POST /files/presigned-url`
+- **Endpoint**: `POST /api/files/presigned-url`
 - **Request Body**:
   ```json
   {
@@ -29,7 +29,7 @@ The application requires that all CVs are uploaded via a pre-signed S3 URL to en
 - **Body**: The binary content of the file.
 
 **Step C: Record the file in the database**
-- **Endpoint**: `POST /files`
+- **Endpoint**: `POST /api/files`
 - **Request Body**:
   ```json
   {
@@ -43,7 +43,7 @@ The application requires that all CVs are uploaded via a pre-signed S3 URL to en
 ### 2. Submit the Form
 Once you have the `cvFileId`, submit the form responses.
 
-- **Endpoint**: `POST /forms/a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11/submissions`
+- **Endpoint**: `POST /api/forms/a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11/submissions`
 - **Request Body**:
   ```json
   {
@@ -65,7 +65,7 @@ Once you have the `cvFileId`, submit the form responses.
 ### 3. Update Form Schedule
 To open a form immediately and schedule a closing time, use the following endpoint:
 
-- **Endpoint**: `PATCH /forms/a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11/status`
+- **Endpoint**: `PATCH /api/forms/a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11/status`
 - **Request Body**:
   ```json
   {

@@ -20,6 +20,10 @@ class AnswerDto {
 
 export class SubmitFormDto {
   @ApiProperty()
+  @IsString()
+  email!: string;
+
+  @ApiProperty()
   @IsNumber()
   cvFileId!: number;
 

@@ -1,0 +1,3 @@
+-- AlterTable
+ALTER TABLE `form_submissions` ADD COLUMN `ai_error` TEXT NULL,
+    ADD COLUMN `ai_score_status` ENUM('PENDING', 'PROCESSING', 'COMPLETED', 'FAILED', 'SKIPPED') NOT NULL DEFAULT 'PENDING';

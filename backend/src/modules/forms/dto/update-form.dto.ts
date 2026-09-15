@@ -9,6 +9,11 @@ class UpdateOptionDto {
   @IsOptional()
   id?: number;
 
+  @ApiPropertyOptional()
+  @IsNumber()
+  @IsOptional()
+  order?: number;
+
   @ApiProperty()
   @IsString()
   @IsNotEmpty()
@@ -34,6 +39,11 @@ class UpdateFieldDto {
   @IsBoolean()
   @IsOptional()
   required?: boolean;
+
+  @ApiPropertyOptional()
+  @IsNumber()
+  @IsOptional()
+  order?: number;
 
   @ApiPropertyOptional({ type: [UpdateOptionDto] })
   @IsArray()

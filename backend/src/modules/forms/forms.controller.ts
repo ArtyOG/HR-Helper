@@ -4,7 +4,7 @@ import { FormsService } from './forms.service';
 import { CreateFormDto } from './dto/create-form.dto';
 import { UpdateFormDto } from './dto/update-form.dto';
 import { UpdateScheduleDto } from './dto/update-status.dto';
-import { FormResponseDto } from './dto/form-response.dto';
+import { FormResponseDto, FormListResponseDto } from './dto/form-response.dto';
 import { JwtAuthGuard } from '../auth/auth.middleware';
 
 @ApiTags('forms')
@@ -25,7 +25,7 @@ export class FormsController {
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard)
   @ApiOperation({ summary: 'Get all forms' })
-  @ApiResponse({ status: 200, type: [FormResponseDto] })
+  @ApiResponse({ status: 200, type: [FormListResponseDto] })
   async findAll(@Req() req: { user: { id: number } }) {
     return this.formsService.findAllByUserId(req.user.id);
   }
