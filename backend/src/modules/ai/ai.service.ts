@@ -129,9 +129,9 @@ export class AiService implements OnModuleInit {
   async processSubmission(submissionId: string): Promise<void> {
     if (!this.baseUrl) {
       this.logger.warn(`AI_SERVICE_URL is not configured. Marking submission ${submissionId} as FAILED.`);
-      await this.safeUpdateSubmission(submissionId, {
-        aiScoreStatus: 'FAILED',
-        aiError: 'AI_SERVICE_URL is not configured in the environment',
+      await this.safeUpdateEvaluation(submissionId, {
+        status: 'FAILED',
+        error: 'AI_SERVICE_URL is not configured in the environment',
       });
       return;
     }
@@ -142,7 +142,11 @@ export class AiService implements OnModuleInit {
       where: { id: submissionId },
       include: {
         form: true,
-        cvFile: true,
+        cvEvaluation: {
+          include: {
+            file: true,
+          },
+        },
       },
     });
 
@@ -155,86 +159,86 @@ export class AiService implements OnModuleInit {
     const requirements = submission.form?.requirements?.trim();
     if (!requirements) {
       this.logger.log(`Form ${submission.formId} has no requirements. Marking submission ${submissionId} as SKIPPED.`);
-      await this.safeUpdateSubmission(submissionId, {
-        aiScoreStatus: 'SKIPPED',
-        aiError: 'Form has no job requirements specified',
+      await this.safeUpdateEvaluation(submissionId, {
+        status: 'SKIPPED',
+        error: 'Form has no job requirements specified',
       });
       return;
     }
 
-    // 2. Check if CV file exists
-    if (!submission.cvFile || !submission.cvFile.key) {
+    // 2. Check if CV evaluation and CV file exist
+    if (!submission.cvEvaluation || !submission.cvEvaluation.file || !submission.cvEvaluation.file.key) {
       this.logger.warn(`Submission ${submissionId} has no associated CV file record.`);
-      await this.safeUpdateSubmission(submissionId, {
-        aiScoreStatus: 'FAILED',
-        aiError: 'CV file record not found in storage',
+      await this.safeUpdateEvaluation(submissionId, {
+        status: 'FAILED',
+        error: 'CV file record not found in storage',
       });
       return;
     }
 
     // 3. Mark as PROCESSING
-    await this.safeUpdateSubmission(submissionId, {
-      aiScoreStatus: 'PROCESSING',
-      aiError: null,
+    await this.safeUpdateEvaluation(submissionId, {
+      status: 'PROCESSING',
+      error: null,
     });
 
     try {
       // 4. Generate presigned download URL with 15 minutes (900s) TTL
-      const presignedUrl = await this.s3Service.getPresignedDownloadUrl(submission.cvFile.key, 900);
+      const presignedUrl = await this.s3Service.getPresignedDownloadUrl(submission.cvEvaluation.file.key, 900);
 
       // 5. Call AI service to compute score
       const score = await this.scoreCv(presignedUrl, requirements);
 
       // 6. Update database with score and COMPLETED status
-      await this.safeUpdateSubmission(submissionId, {
-        cvScore: score,
-        aiScoreStatus: 'COMPLETED',
-        aiError: null,
+      await this.safeUpdateEvaluation(submissionId, {
+        score: score,
+        status: 'COMPLETED',
+        error: null,
       });
 
       this.logger.log(`Successfully scored submission ${submissionId} with score: ${score}`);
     } catch (error: any) {
       this.logger.error(`Failed to complete AI scoring for submission ${submissionId}: ${error.message}`);
-      await this.safeUpdateSubmission(submissionId, {
-        aiScoreStatus: 'FAILED',
-        aiError: error.message || 'An error occurred during AI scoring',
+      await this.safeUpdateEvaluation(submissionId, {
+        status: 'FAILED',
+        error: error.message || 'An error occurred during AI scoring',
       });
     }
   }
 
   private async safeUpdateSubmission(submissionId: string, data: any): Promise<void> {
     try {
-      await this.prisma.formSubmission.update({
-        where: { id: submissionId },
+      await this.prisma.cvEvaluation.update({
+        where: { submissionId },
         data,
       });
     } catch (error: any) {
-      this.logger.warn(`Failed to update submission ${submissionId}: ${error.message}`);
+      this.logger.warn(`Failed to update cvEvaluation for submission ${submissionId}: ${error.message}`);
     }
   }
 
   private async recoverInterruptedJobs(): Promise<void> {
     const tenMinutesAgo = new Date(Date.now() - 10 * 60 * 1000);
 
-    // Find submissions stuck in PROCESSING for more than 10 minutes (likely due to a backend crash/restart)
-    const stuckSubmissions = await this.prisma.formSubmission.findMany({
+    // Find evaluations stuck in PROCESSING for more than 10 minutes (likely due to a backend crash/restart)
+    const stuckEvaluations = await this.prisma.cvEvaluation.findMany({
       where: {
-        aiScoreStatus: 'PROCESSING',
-        createdAt: { lt: tenMinutesAgo },
+        status: 'PROCESSING',
+        updatedAt: { lt: tenMinutesAgo },
       },
-      select: { id: true },
+      select: { submissionId: true },
     });
 
-    if (stuckSubmissions.length > 0) {
-      this.logger.log(`Found ${stuckSubmissions.length} stuck AI scoring jobs. Requeuing...`);
-      for (const item of stuckSubmissions) {
-        await this.safeUpdateSubmission(item.id, {
-          aiScoreStatus: 'PENDING',
-          aiError: 'Recovered after service restart',
+    if (stuckEvaluations.length > 0) {
+      this.logger.log(`Found ${stuckEvaluations.length} stuck AI scoring jobs. Requeuing...`);
+      for (const item of stuckEvaluations) {
+        await this.safeUpdateEvaluation(item.submissionId, {
+          status: 'PENDING',
+          error: 'Recovered after service restart',
         });
         setImmediate(() => {
-          this.processSubmission(item.id).catch((err) => {
-            this.logger.error(`Error processing recovered submission ${item.id}`, err);
+          this.processSubmission(item.submissionId).catch((err) => {
+            this.logger.error(`Error processing recovered submission ${item.submissionId}`, err);
           });
         });
       }
