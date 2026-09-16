@@ -53,6 +53,7 @@ export class FormSubmissionsService {
         data: {
           formId: formId,
           email: dto.email,
+          cvFileId: dto.cvFileId,
           cvEvaluation: {
             create: {
               fileId: dto.cvFileId,

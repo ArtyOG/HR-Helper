@@ -206,7 +206,7 @@ export class AiService implements OnModuleInit {
     }
   }
 
-  private async safeUpdateSubmission(submissionId: string, data: any): Promise<void> {
+  private async safeUpdateEvaluation(submissionId: string, data: any): Promise<void> {
     try {
       await this.prisma.cvEvaluation.update({
         where: { submissionId },
