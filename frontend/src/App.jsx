@@ -11,8 +11,11 @@ import CreateForm from './pages/CreateForm';
 import EditForm from './pages/EditForm';
 import FormView from './pages/FormView';
 import ApplyForm from './pages/ApplyForm';
+import SlotBooking from './pages/SlotBooking';
 import SubmissionsView from './pages/SubmissionsView';
 import WorkspaceShell from './components/workspace/WorkspaceShell';
+import EmailSequences from './pages/EmailSequences';
+import InterviewSlots from './pages/InterviewSlots';
 
 function RequireAuth({ children }) {
   const { user, loading, authError } = useAuth();
@@ -50,6 +53,7 @@ function App() {
           <Route path="/" element={<LandingPage />} />
           <Route path="/login" element={<Authentication />} />
           <Route path="/apply/:formId" element={<ApplyForm />} />
+          <Route path="/schedule/:formId/:submissionId" element={<SlotBooking />} />
           <Route
             path="/home"
             element={
@@ -100,6 +104,10 @@ function App() {
           />
           <Route
             path="/workspace"
+            element={<Navigate to="/workspace/dashboard" replace />}
+          />
+          <Route
+            path="/workspace/dashboard"
             element={
               <RequireAuth>
                 <User_Workspace />
@@ -111,6 +119,26 @@ function App() {
             element={
               <RequireAuth>
                 <JobListingsPage />
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="/workspace/email-sequences"
+            element={
+              <RequireAuth>
+                <WorkspaceShell>
+                  <EmailSequences />
+                </WorkspaceShell>
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="/workspace/interview-slots"
+            element={
+              <RequireAuth>
+                <WorkspaceShell>
+                  <InterviewSlots />
+                </WorkspaceShell>
               </RequireAuth>
             }
           />

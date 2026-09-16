@@ -6,6 +6,7 @@ import { formatDateTime, getFormStatus, getNextFormsStatusTime } from '../utils/
 import { useNow } from '../hooks/useNow';
 import { useFormActions } from '../hooks/useFormActions';
 import { DeleteFormModal, CloseFormModal, OpenFormModal } from '../components/forms/FormModals';
+import SearchBar from '../components/common/SearchBar';
 
 function StatusPill({ status }) {
   const styles = {
@@ -49,15 +50,6 @@ function PlusIcon() {
   return (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" className="h-4 w-4">
       <path d="M12 5v14M5 12h14" />
-    </svg>
-  );
-}
-
-function SearchIcon() {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5">
-      <circle cx="11" cy="11" r="7" />
-      <path d="m21 21-4.3-4.3" />
     </svg>
   );
 }
@@ -224,6 +216,41 @@ function IconTrash() {
 }
 
 function JobCard({ job, onApplicants, onEdit, onDelete, onDuplicate, onCopyLink, onCloseNow, onOpen, onSubmissions, onPreview }) {
+  const [menuOpen, setMenuOpen] = useState(false);
+  const popupRef = useRef(null);
+
+  useEffect(() => {
+    if (!menuOpen) return undefined;
+    const close = () => setMenuOpen(false);
+    const opts = { passive: true, capture: true };
+    window.addEventListener('scroll', close, opts);
+    document.addEventListener('scroll', close, opts);
+    window.addEventListener('touchmove', close, opts);
+    const handlePointerDown = (event) => {
+      if (!popupRef.current?.contains(event.target)) setMenuOpen(false);
+    };
+    document.addEventListener('pointerdown', handlePointerDown, true);
+    return () => {
+      window.removeEventListener('scroll', close, opts);
+      document.removeEventListener('scroll', close, opts);
+      window.removeEventListener('touchmove', close, opts);
+      document.removeEventListener('pointerdown', handlePointerDown, true);
+    };
+  }, [menuOpen]);
+
+  const toggleMenu = (e) => {
+    e.stopPropagation();
+    if (menuOpen) e.currentTarget.blur();
+    setMenuOpen((v) => !v);
+  };
+
+  const runItem = (action) => (event) => {
+    event.stopPropagation();
+    event.currentTarget.blur();
+    action();
+    setMenuOpen(false);
+  };
+
   return (
     <article
       role="button"
@@ -260,7 +287,8 @@ function JobCard({ job, onApplicants, onEdit, onDelete, onDuplicate, onCopyLink,
         />
 
         <div
-          className="popup popup--desktop-hidden md:hidden"
+          ref={popupRef}
+          className={`popup popup--desktop-hidden md:hidden ${menuOpen ? 'open' : ''}`}
           onClick={(e) => e.stopPropagation()}
           onKeyDown={(e) => e.stopPropagation()}
         >
@@ -268,6 +296,8 @@ function JobCard({ job, onApplicants, onEdit, onDelete, onDuplicate, onCopyLink,
             type="button"
             aria-label="Form actions"
             aria-haspopup="true"
+            aria-expanded={menuOpen}
+            onClick={toggleMenu}
             className="burger cursor-pointer"
           >
             <span />
@@ -282,10 +312,7 @@ function JobCard({ job, onApplicants, onEdit, onDelete, onDuplicate, onCopyLink,
                 <li>
                   <button
                     type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onCopyLink();
-                    }}
+                    onClick={runItem(onCopyLink)}
                   >
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4" aria-hidden="true">
                       <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
@@ -299,10 +326,7 @@ function JobCard({ job, onApplicants, onEdit, onDelete, onDuplicate, onCopyLink,
                 <li>
                   <button
                     type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onApplicants();
-                    }}
+                    onClick={runItem(onApplicants)}
                   >
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4" aria-hidden="true">
                       <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
@@ -318,10 +342,7 @@ function JobCard({ job, onApplicants, onEdit, onDelete, onDuplicate, onCopyLink,
                 <li>
                   <button
                     type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onCloseNow();
-                    }}
+                    onClick={runItem(onCloseNow)}
                   >
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4" aria-hidden="true">
                       <circle cx="12" cy="12" r="9" />
@@ -335,10 +356,7 @@ function JobCard({ job, onApplicants, onEdit, onDelete, onDuplicate, onCopyLink,
                 <li>
                   <button
                     type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onOpen();
-                    }}
+                    onClick={runItem(onOpen)}
                   >
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4" aria-hidden="true">
                       <rect x="3" y="4" width="18" height="18" rx="2" />
@@ -353,10 +371,7 @@ function JobCard({ job, onApplicants, onEdit, onDelete, onDuplicate, onCopyLink,
                 <li>
                   <button
                     type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onEdit();
-                    }}
+                    onClick={runItem(onEdit)}
                   >
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4" aria-hidden="true">
                       <path d="M12 20h9" />
@@ -371,10 +386,7 @@ function JobCard({ job, onApplicants, onEdit, onDelete, onDuplicate, onCopyLink,
                 <li>
                   <button
                     type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onDuplicate();
-                    }}
+                    onClick={runItem(onDuplicate)}
                   >
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4" aria-hidden="true">
                       <rect x="9" y="9" width="13" height="13" rx="2" />
@@ -390,10 +402,7 @@ function JobCard({ job, onApplicants, onEdit, onDelete, onDuplicate, onCopyLink,
                   <button
                     type="button"
                     className="popup-danger"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onDelete();
-                    }}
+                    onClick={runItem(onDelete)}
                   >
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-4 w-4" aria-hidden="true">
                       <path strokeLinecap="round" d="M3 6h18M8 6V4a1 1 0 011-1h6a1 1 0 011 1v2m3 0v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6" />
@@ -585,18 +594,12 @@ function JobListingsPage() {
                 </span>
               </div>
 
-              <div className="relative w-full sm:w-[300px]">
-                <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-stone-400">
-                  <SearchIcon />
-                </span>
-                <input
-                  type="text"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Search forms"
-                  className="h-[46px] w-full rounded-full border border-plum/10 bg-white pl-12 pr-5 text-sm text-stone-600 shadow-sm outline-none transition placeholder:text-stone-400 focus:border-teal"
-                />
-              </div>
+              <SearchBar
+                value={searchQuery}
+                onChange={setSearchQuery}
+                placeholder="Search forms"
+                fluid
+              />
             </div>
 
             <div className="mt-2">

@@ -13,7 +13,7 @@ export function NavigationProvider({ children }) {
       goToSignup: () => navigate('/login?mode=signup', { state: { background: location } }),
       closeAuth: () => navigate('/'),
       goToHR: () => navigate('/hr'),
-      goToWorkspace: () => navigate('/workspace'),
+      goToWorkspace: () => navigate('/workspace/dashboard'),
       goToJobListings: () => navigate('/workspace/jobs'),
       goToLanding: () => navigate('/'),
       goToCreateForm: (template) => navigate('/hr/forms/new', { state: { template } }),
@@ -24,6 +24,8 @@ export function NavigationProvider({ children }) {
       goToEditFormWs: (formId) => navigate(`/workspace/forms/${formId}/edit`),
       goToFormViewWs: (formId) => navigate(`/workspace/forms/${formId}`),
       goToSubmissionsWs: (formId) => navigate(`/workspace/forms/${formId}/submissions`),
+      goToEmailSequencesWs: (state) => navigate('/workspace/email-sequences', { state }),
+      goToInterviewSlotsWs: () => navigate('/workspace/interview-slots'),
     }),
     [navigate, location]
   );

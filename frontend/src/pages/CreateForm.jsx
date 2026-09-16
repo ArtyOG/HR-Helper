@@ -39,36 +39,6 @@ function CreateForm() {
           <FormBuilder template={template} />
         </div>
       </main>
-
-      <footer className="mt-16 bg-plum-dark py-10 text-[#f2efe7]">
-        <div className="mx-auto grid w-full max-w-6xl grid-cols-2 gap-8 px-6 md:grid-cols-4 lg:px-8">
-          <div>
-            <p className="text-lg font-bold">HiOring</p>
-            <p className="mt-2 text-xs text-white/60">Hiring made simple.</p>
-          </div>
-          <div>
-            <p className="text-sm font-semibold">Quick Link</p>
-            <ul className="mt-2 space-y-1 text-xs text-white/70">
-              <li>Home</li>
-              <li>Hiring form</li>
-              <li>Workspace</li>
-            </ul>
-          </div>
-          <div>
-            <p className="text-sm font-semibold">Get our app</p>
-            <ul className="mt-2 space-y-1 text-xs text-white/70">
-              <li>iOS</li>
-              <li>Android</li>
-            </ul>
-          </div>
-          <div>
-            <p className="text-sm font-semibold">Contact Us</p>
-            <ul className="mt-2 space-y-1 text-xs text-white/70">
-              <li>support@hioring.com</li>
-            </ul>
-          </div>
-        </div>
-      </footer>
     </div>
   );
 }

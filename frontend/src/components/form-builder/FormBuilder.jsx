@@ -744,7 +744,7 @@ function FormBuilder({ initialForm = null, template = 'standard' }) {
             scheduleNoteText = ` Close at: ${formatDateTime(closeAtISO)} — the form closes automatically.`;
           } else {
             await updateFormSchedule(formId, null);
-            scheduleNoteText = ' The form is now permanently open — no closing time.';
+            scheduleNoteText = ' No close time is set, so the form is closed to applications until you schedule one.';
           }
         } catch (scheduleErr) {
           scheduleWarningText = scheduleErr?.message || 'The closing time could not be updated.';
@@ -899,6 +899,12 @@ function FormBuilder({ initialForm = null, template = 'standard' }) {
           </label>
         </div>
 
+        {!scheduleEnabled && (
+          <p className="mt-3 text-[11px] font-medium text-stone-400">
+            No close time set — the form will not accept applications until you set one.
+          </p>
+        )}
+
         {scheduleEnabled && (
           <div className="mt-5 max-w-lg space-y-5">
             <div className="grid gap-4 sm:grid-cols-2">
@@ -949,10 +955,10 @@ function FormBuilder({ initialForm = null, template = 'standard' }) {
             subText={
               (linkCopied
                 ? `${
-                    isEditing ? 'Your hiring form has been updated.' : 'Your hiring form is now live.'
+                    isEditing ? 'Your hiring form has been updated.' : (scheduleEnabled ? 'Your hiring form is now live.' : 'Your hiring form is saved, but closed to applications until you set a close time.')
                   } The form link was copied to your clipboard.`
                 : `${
-                    isEditing ? 'Your hiring form has been updated.' : 'Your hiring form is now live.'
+                    isEditing ? 'Your hiring form has been updated.' : (scheduleEnabled ? 'Your hiring form is now live.' : 'Your hiring form is saved, but closed to applications until you set a close time.')
                   } ${formLink ? 'Copy the form link below to share it.' : ''}`) + scheduleNote
             }
             onClose={() => setSuccess(false)}

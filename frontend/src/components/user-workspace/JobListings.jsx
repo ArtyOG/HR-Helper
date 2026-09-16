@@ -75,33 +75,28 @@ function JobListings({ forms = [], loading = false }) {
           {jobs.map((job) => (
             <li key={job.id} className="flex items-center justify-between gap-3 py-4">
               <div className="min-w-0">
-                {job.status === 'Live' ? (
-                  <button
-                    type="button"
-                    onClick={() => goToSubmissionsWs(job.id)}
-                    className="block w-full truncate text-left text-sm font-semibold text-[#344e41] transition hover:text-plum"
-                    title={`View applicants for ${job.title}`}
-                  >
-                    {job.title}
-                  </button>
-                ) : (
-                  <p className="truncate text-sm font-semibold text-stone-400">{job.title}</p>
-                )}
+                <button
+                  type="button"
+                  onClick={() => goToSubmissionsWs(job.id)}
+                  className="block w-full truncate text-left text-sm font-semibold text-[#344e41] transition hover:text-plum"
+                  title={`View applicants for ${job.title}`}
+                >
+                  {job.title}
+                </button>
                 <p className="mt-0.5 truncate text-xs text-stone-500">{job.meta}</p>
               </div>
 
               <div className="flex shrink-0 items-center gap-3">
                 <StatusPill status={job.status} />
-                {job.status === 'Live' && (
-                  <button
-                    type="button"
-                    onClick={() => goToSubmissionsWs(job.id)}
-                    className="flex items-center gap-1.5 text-xs font-semibold text-stone-500 transition hover:text-plum"
-                  >
-                    <UsersIcon />
-                    {job.applicants}
-                  </button>
-                )}
+                <button
+                  type="button"
+                  onClick={() => goToSubmissionsWs(job.id)}
+                  className="flex items-center gap-1.5 text-xs font-semibold text-stone-500 transition hover:text-plum"
+                  title={`View applicants for ${job.title}`}
+                >
+                  <UsersIcon />
+                  {job.applicants}
+                </button>
               </div>
             </li>
           ))}

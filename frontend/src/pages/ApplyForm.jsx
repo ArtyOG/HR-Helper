@@ -140,6 +140,7 @@ function ApplyForm() {
   const accepting = isFormAcceptingResponses(form, now);
   const notOpenYet = form?.openAt != null && now < new Date(form.openAt).getTime();
   const ended = form?.closeAt != null && now > new Date(form.closeAt).getTime();
+  const noWindow = form?.openAt == null && form?.closeAt == null;
 
   useEffect(() => {
     if (!formId) return;
@@ -310,14 +311,20 @@ function ApplyForm() {
                       </svg>
                     </span>
                     <p className="mt-4 text-xl font-bold text-plum">
-                      {notOpenYet ? 'Applications are not open yet' : 'This form is closed'}
+                      {noWindow
+                        ? 'This form is not open for applications'
+                        : notOpenYet
+                          ? 'Applications are not open yet'
+                          : 'This form is closed'}
                     </p>
                     <p className="mt-2 text-sm text-stone-600">
-                      {notOpenYet
-                        ? `Applications open on ${formatDateTime(form.openAt)}.`
-                        : ended
-                          ? `Applications closed on ${formatDateTime(form.closeAt)}.`
-                          : 'This position is no longer accepting applications.'}
+                      {noWindow
+                        ? 'No application window has been set. Please check back later.'
+                        : notOpenYet
+                          ? `Applications open on ${formatDateTime(form.openAt)}.`
+                          : ended
+                            ? `Applications closed on ${formatDateTime(form.closeAt)}.`
+                            : 'This position is no longer accepting applications.'}
                     </p>
                   </div>
                 </div>

@@ -145,8 +145,8 @@ function LogoutIcon() {
 
 const mainNav = [
   { label: 'Dashboards', icon: DashboardIcon, navigate: 'workspace' },
-  { label: 'Candidates Interview', icon: UsersIcon, soon: true },
-  { label: 'Email Sequences', icon: MailIcon, soon: true },
+  { label: 'Candidates Interview', icon: UsersIcon, navigate: 'interview-slots' },
+  { label: 'Email Sequences', icon: MailIcon, navigate: 'email-sequences' },
   { label: 'Job List', icon: BriefcaseIcon, navigate: 'job-listings' },
 ];
 
@@ -201,7 +201,13 @@ function NavItem({ label, icon: Icon, active, soon, onClick }) {
 }
 
 function SidebarContent({ active, setActive, onNavigate, onRequestLeave }) {
-  const { goToWorkspace, goToHR, goToJobListings } = useNavigation();
+  const {
+    goToWorkspace,
+    goToHR,
+    goToJobListings,
+    goToEmailSequencesWs,
+    goToInterviewSlotsWs,
+  } = useNavigation();
 
   const select = (label, item) => {
     setActive(label);
@@ -209,6 +215,8 @@ function SidebarContent({ active, setActive, onNavigate, onRequestLeave }) {
     if (item?.navigate === 'workspace') goToWorkspace();
     if (item?.navigate === 'hr') goToHR();
     if (item?.navigate === 'job-listings') goToJobListings();
+    if (item?.navigate === 'email-sequences') goToEmailSequencesWs();
+    if (item?.navigate === 'interview-slots') goToInterviewSlotsWs();
   };
 
   return (
@@ -282,7 +290,9 @@ function Navbar() {
 
   useEffect(() => {
     if (location.pathname.startsWith('/workspace/jobs')) setActive('Job List');
-    else if (location.pathname.startsWith('/workspace')) setActive('Dashboards');
+    else if (location.pathname.startsWith('/workspace/email-sequences')) setActive('Email Sequences');
+    else if (location.pathname.startsWith('/workspace/interview-slots')) setActive('Candidates Interview');
+    else if (location.pathname.startsWith('/workspace/dashboard')) setActive('Dashboards');
   }, [location.pathname]);
 
   const requestLeave = () => {

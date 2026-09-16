@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { useFormsBackNav } from '../hooks/useFormsBackNav';
+import { useNavigation } from '../context/NavigationContext';
 import Checkbox from '../components/common/Checkbox';
 import {
   getForm,
@@ -113,6 +114,49 @@ function ConfirmDeleteModal({ email, deleting, error, onCancel, onConfirm }) {
   );
 }
 
+function ConfirmApproveModal({ count, busy, onCancel, onConfirm }) {
+  return (
+    <div
+      className="fixed inset-0 z-[100] flex items-center justify-center bg-plum-dark/50 p-4 backdrop-blur-sm"
+      role="dialog"
+      aria-modal="true"
+      aria-label="Approve candidates"
+      onClick={onCancel}
+    >
+      <div
+        className="w-full max-w-sm rounded-[20px] bg-[#f2efe7] p-6 shadow-2xl ring-1 ring-plum/10"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <h3 className="font-sans text-xl font-bold text-plum">
+          Approve {count} candidate{count === 1 ? '' : 's'}?
+        </h3>
+        <p className="mt-2 text-sm text-stone-600">
+          They will be approved and taken to the Email Sequences page so you can set up
+          interview time slots before sending the invitation.
+        </p>
+        <div className="mt-5 flex justify-end gap-2">
+          <button
+            type="button"
+            onClick={onCancel}
+            disabled={busy}
+            className="rounded-full border border-plum/30 px-4 py-2 text-sm font-semibold text-plum transition hover:bg-plum hover:text-white disabled:opacity-50"
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            onClick={onConfirm}
+            disabled={busy}
+            className="rounded-full bg-[#588157] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#163726] disabled:cursor-not-allowed disabled:opacity-40"
+          >
+            {busy ? 'Approving...' : 'Confirm & continue'}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function DetailModal({ detail, onClose }) {
   const answers = detail?.answers ?? [];
   return (
@@ -181,12 +225,14 @@ function DetailModal({ detail, onClose }) {
 function SubmissionsView() {
   const { formId } = useParams();
   const backTo = useFormsBackNav();
+  const { goToEmailSequencesWs } = useNavigation();
   const [form, setForm] = useState(null);
   const [submissions, setSubmissions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [selected, setSelected] = useState(new Set());
   const [busy, setBusy] = useState(false);
+  const [approveTarget, setApproveTarget] = useState(null);
   const [detail, setDetail] = useState(null);
   const [detailLoading, setDetailLoading] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState(null);
@@ -263,7 +309,7 @@ function SubmissionsView() {
   };
 
   const changeStatus = async (ids, status) => {
-    if (!formId || busy || ids.length === 0) return;
+    if (!formId || busy || ids.length === 0) return false;
     setBusy(true);
     setError(null);
     try {
@@ -277,10 +323,32 @@ function SubmissionsView() {
       );
       if (detail && ids.includes(detail.id)) setDetail({ ...detail, status });
       setSelected(new Set());
+      return true;
     } catch (err) {
       setError(err.message || 'Failed to update status.');
+      return false;
     } finally {
       setBusy(false);
+    }
+  };
+
+  const confirmApprove = async () => {
+    if (!approveTarget || approveTarget.length === 0) return;
+    const targets = approveTarget;
+    setApproveTarget(null);
+    const ok = await changeStatus(
+      targets.map((s) => s.id),
+      'APPROVED'
+    );
+    if (ok) {
+      goToEmailSequencesWs({
+        candidates: targets.map((s) => ({
+          email: s.email,
+          submissionId: s.id,
+          formId,
+          jobTitle: form?.title ?? null,
+        })),
+      });
     }
   };
 
@@ -496,7 +564,13 @@ function SubmissionsView() {
                   <button
                     type="button"
                     disabled={busy}
-                    onClick={() => changeStatus(selectedIds, 'APPROVED')}
+                    onClick={() =>
+                      setApproveTarget(
+                        selectedIds
+                          .map((id) => submissions.find((s) => s.id === id))
+                          .filter(Boolean)
+                      )
+                    }
                     className="rounded-full bg-[#a7eda7] px-4 py-1.5 text-xs font-bold text-[#0d6921] transition hover:brightness-95 disabled:opacity-50"
                   >
                     Approve
@@ -578,7 +652,7 @@ function SubmissionsView() {
                               <button
                                 type="button"
                                 disabled={busy}
-                                onClick={() => changeStatus([submission.id], 'APPROVED')}
+                                onClick={() => setApproveTarget([submission])}
                                 className="rounded-full border border-[#0d6921]/30 px-3 py-1 text-[11px] font-bold text-[#0d6921] transition hover:bg-[#a7eda7] disabled:opacity-50"
                               >
                                 Approve
@@ -647,6 +721,15 @@ function SubmissionsView() {
           deleting={deleting}
           onCancel={() => { setDeleteTarget(null); setDeleteError(null); }}
           onConfirm={confirmDelete}
+        />
+      )}
+
+      {approveTarget && (
+        <ConfirmApproveModal
+          count={approveTarget.length}
+          busy={busy}
+          onCancel={() => setApproveTarget(null)}
+          onConfirm={confirmApprove}
         />
       )}
     </div>
