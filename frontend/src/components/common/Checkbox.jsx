@@ -1,12 +1,16 @@
-function Checkbox({ checked, onChange, label, ariaLabel, className }) {
+function Checkbox({ checked, onChange, label, ariaLabel, className, disabled }) {
   return (
-    <label className={`checkbox-wrapper-46 ${className ?? ''}`}>
+    <label
+      className={`checkbox-wrapper-46 ${className ?? ''} ${disabled ? 'pointer-events-none opacity-40' : ''}`}
+      aria-disabled={disabled || undefined}
+    >
       <input
         type="checkbox"
         className="inp-cbx"
         checked={checked}
         onChange={onChange}
         aria-label={ariaLabel}
+        disabled={disabled}
       />
       <span className="cbx">
         <span>

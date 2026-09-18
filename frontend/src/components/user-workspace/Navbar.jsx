@@ -2,24 +2,9 @@ import { useEffect, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useNavigation } from '../../context/NavigationContext';
 import ConfirmModal from '../common/ConfirmModal';
+import Logo from '../common/Logo';
 
 const DURATION = 450;
-
-function Logo() {
-  return (
-    <div className="flex items-center gap-3">
-      <span className="relative flex h-[68px] w-[68px] shrink-0 items-center justify-center rounded-2xl bg-[#344e41] ring-1 ring-white/10">
-        <span className="font-serif text-[38px] font-bold leading-none text-gold">H</span>
-        <span className="absolute bottom-2 left-2 flex items-end gap-1">
-          <span className="h-1 w-3 rounded-full bg-teal" />
-          <span className="h-1.5 w-4 rounded-full bg-gold" />
-          <span className="h-1 w-2 rounded-full bg-white/25" />
-        </span>
-      </span>
-      <span className="font-sans text-[26px] font-bold leading-none text-white">HiORing</span>
-    </div>
-  );
-}
 
 function DashboardIcon() {
   return (
@@ -86,24 +71,6 @@ function BriefcaseIcon() {
   );
 }
 
-function UserIcon() {
-  return (
-    <svg
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      className="h-5 w-5 shrink-0"
-      aria-hidden="true"
-    >
-      <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" />
-      <circle cx="12" cy="7" r="4" />
-    </svg>
-  );
-}
-
 function CardIcon() {
   return (
     <svg
@@ -151,7 +118,6 @@ const mainNav = [
 ];
 
 const accountNav = [
-  { label: 'Profile', icon: UserIcon, soon: true },
   { label: 'Billing', icon: CardIcon, soon: true },
   { label: 'Integration', icon: SettingsIcon, soon: true },
 ];
@@ -221,8 +187,8 @@ function SidebarContent({ active, setActive, onNavigate, onRequestLeave }) {
 
   return (
     <div className="flex h-full w-full flex-col bg-[#344e41] py-6">
-      <div className="px-6 pb-6">
-        <Logo />
+      <div className="flex items-center justify-center px-6 pb-6">
+        <Logo light className="block h-16 w-auto" />
       </div>
 
       <nav className="flex-1 overflow-y-auto px-4">
@@ -335,8 +301,8 @@ function Navbar() {
   return (
     <>
       <header className="fixed inset-x-0 top-0 z-40 flex h-16 items-center justify-between bg-[#344e41] px-4 lg:hidden">
-        <div className="scale-90 origin-left">
-          <Logo />
+        <div className="flex items-center justify-center">
+          <Logo light className="block h-11 w-auto" />
         </div>
         <button
           type="button"

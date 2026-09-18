@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react';
-import { listForms, listInterviewSlots, listSubmissions } from '../services/api';
+import { getApplicantName } from '../utils/applicantName';
+import { fetchWorkspaceData, useForms } from '../hooks/useWorkspaceData';
+import UserMenu from '../components/common/UserMenu';
 
 
 const formatTime = (iso) =>
@@ -66,41 +68,41 @@ const rowTimeLabel = (start, bucket) => {
 };
 
 function InterviewRow({ row, bucket }) {
+  const displayName = row.name || row.email;
   return (
-    <li className="flex flex-wrap items-center gap-3 py-4">
-      <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-teal text-sm font-bold uppercase text-white">
-        {initialsFromEmail(row.email)}
-      </span>
-
-      <div className="min-w-0 flex-1">
-        <p className="truncate text-sm font-bold text-[#344e41]">{row.email}</p>
+    <li className="rounded-xl bg-white p-4 shadow-sm ring-1 ring-plum/10">
+      <div className="flex items-center gap-3">
+        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-teal text-xs font-bold uppercase text-white">
+          {initialsFromEmail(displayName)}
+        </span>
+        <div className="min-w-0 flex-1">
+          <p className="truncate text-sm font-bold text-[#344e41]">{displayName}</p>
+        </div>
       </div>
 
-      {row.role && (
-        <span className="hidden shrink-0 rounded-md bg-[#f2f0e8] px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-plum md:inline-block">
-          {row.role}
-        </span>
-      )}
-
-      <span className="flex shrink-0 items-center gap-1.5 text-xs font-semibold text-stone-600">
-        <ClockIcon />
-        {rowTimeLabel(row.start, bucket)}
-      </span>
-
-      {row.match != null ? (
-        <span className="shrink-0 rounded-md bg-plum/10 px-2 py-1 text-[11px] font-bold text-plum">
-          {row.match}% Match
-        </span>
-      ) : (
-        <span className="shrink-0 rounded-md bg-stone-100 px-2 py-1 text-[11px] font-bold text-stone-400">
-          New
-        </span>
-      )}
+      <div className="mt-3 border-t border-plum/10 pt-3">
+        {row.role && (
+          <span className="truncate rounded-md bg-[#f2f0e8] px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-plum">
+            {row.role}
+          </span>
+        )}
+        <p className="mt-2 flex items-center gap-1.5 text-xs font-semibold text-stone-600">
+          <ClockIcon />
+          Due {rowTimeLabel(row.start, bucket)}
+        </p>
+      </div>
     </li>
   );
 }
 
+const PANEL_ICONS = {
+  today: null,
+  upcoming: 'https://cdn-icons-png.flaticon.com/512/10090/10090250.png',
+  done: 'https://cdn-icons-png.flaticon.com/512/25/25643.png',
+};
+
 function SchedulePanel({ title, rows, bucket }) {
+  const icon = PANEL_ICONS[bucket];
   return (
     <section className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-plum/10">
       <div className="flex items-center justify-between gap-3">
@@ -110,13 +112,13 @@ function SchedulePanel({ title, rows, bucket }) {
             {rows.length}
           </span>
         </div>
-        <button
-          type="button"
-          aria-label={`Open ${title.toLowerCase()} calendar`}
-          className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#f2f0e8] text-plum transition hover:bg-plum hover:text-white"
-        >
-          <CalendarIcon />
-        </button>
+        <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#f2f0e8] text-plum">
+          {icon ? (
+            <img src={icon} alt="" aria-hidden="true" className="h-6 w-6 object-contain" />
+          ) : (
+            <CalendarIcon />
+          )}
+        </span>
       </div>
 
       {rows.length === 0 ? (
@@ -124,7 +126,7 @@ function SchedulePanel({ title, rows, bucket }) {
           No {title.toLowerCase()} interviews yet.
         </p>
       ) : (
-        <ul className="mt-1 divide-y divide-plum/10">
+        <ul className="mt-4 space-y-3">
           {rows.map((row) => (
             <InterviewRow key={row.slotId} row={row} bucket={bucket} />
           ))}
@@ -145,32 +147,23 @@ function StatCard({ label, value, note }) {
 }
 
 export default function InterviewSlots() {
+  const { forms } = useForms();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [stats, setStats] = useState({ totalCandidates: 0, today: 0, upcoming: 0, done: 0 });
   const [groups, setGroups] = useState({ today: [], upcoming: [], done: [] });
 
   useEffect(() => {
+    if (!forms) return undefined;
     let cancelled = false;
 
     const load = async () => {
       try {
-        const forms = await listForms();
-        if (cancelled) return;
-
-        const results = await Promise.all(
-          (Array.isArray(forms) ? forms : []).map(async (form) => {
-            const [slots, subs] = await Promise.all([
-              listInterviewSlots(form.id).catch(() => []),
-              listSubmissions(form.id).catch(() => []),
-            ]);
-            return { form, slots: slots || [], subs: subs || [] };
-          })
-        );
+        const results = await fetchWorkspaceData(forms);
         if (cancelled) return;
 
         const subById = new Map();
-        results.forEach(({ subs }) => subs.forEach((sub) => subById.set(sub.id, sub)));
+        results.forEach(({ submissions }) => submissions.forEach((sub) => subById.set(sub.id, sub)));
 
         const now = new Date();
         const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
@@ -180,8 +173,8 @@ export default function InterviewSlots() {
         const buckets = { today: [], upcoming: [], done: [] };
         let totalCandidates = 0;
 
-        results.forEach(({ form, slots }) => {
-          totalCandidates += Number(form.submissionCount) || 0;
+        results.forEach(({ form, detail, slots }) => {
+          totalCandidates += Number(detail?.submissionCount ?? 0) || 0;
           (slots || []).forEach((slot) => {
             if (slot.status !== 'BOOKED' || !slot.submissionId) return;
             const sub = subById.get(slot.submissionId);
@@ -190,8 +183,9 @@ export default function InterviewSlots() {
               slotId: slot.id,
               start,
               email: sub?.email || `Candidate #${String(slot.submissionId).slice(0, 6)}`,
+              name: sub ? getApplicantName(sub, detail) : '',
               match: sub?.cvEvaluation?.score != null ? Math.round(Number(sub.cvEvaluation.score)) : null,
-              role: form?.title || '',
+              role: detail?.title || form.title || '',
             };
             if (start >= startOfTomorrow) buckets.upcoming.push(row);
             else if (start >= startOfToday) buckets.today.push(row);
@@ -220,7 +214,7 @@ export default function InterviewSlots() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [forms]);
 
   const totalBooked = stats.today + stats.upcoming + stats.done;
 
@@ -258,9 +252,7 @@ export default function InterviewSlots() {
                 <MessageIcon />
                 <Badge count="2" />
               </button>
-              <span className="flex h-[43px] w-[43px] items-center justify-center rounded-full bg-teal text-sm font-bold uppercase text-white shadow-sm">
-                DS
-              </span>
+              <UserMenu />
             </div>
           </div>
 
@@ -303,7 +295,7 @@ export default function InterviewSlots() {
                   </p>
                 </div>
               ) : (
-                <div className="mt-3 space-y-6">
+                <div className="mt-3 grid grid-cols-1 items-start gap-6 lg:grid-cols-3">
                   <SchedulePanel title="Today" rows={groups.today} bucket="today" />
                   <SchedulePanel title="Upcoming" rows={groups.upcoming} bucket="upcoming" />
                   <SchedulePanel title="Done" rows={groups.done} bucket="done" />

@@ -852,6 +852,12 @@ function FormBuilder({ initialForm = null, template = 'standard' }) {
             + Add question
           </button>
         </div>
+        <p className="mt-3 rounded-xl bg-gold/15 px-4 py-3 text-xs font-medium leading-relaxed text-plum">
+          <span className="font-bold">Recommended:</span> add a{' '}
+          <span className="font-bold">"First name"</span> and a{' '}
+          <span className="font-bold">"Last name"</span> question so the applicant's name is shown
+          across your dashboard — otherwise their email is displayed automatically.
+        </p>
         <div className="mt-4 grid gap-4 sm:grid-cols-2">
           <DndContext
             sensors={sensors}

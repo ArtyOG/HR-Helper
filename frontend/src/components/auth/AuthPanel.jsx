@@ -1,16 +1,4 @@
-function Logo() {
-  return (
-    <a href="#top" className="flex items-center gap-3">
-      <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-gold font-sans text-2xl font-bold text-plum shadow-sm">
-        H
-      </span>
-      <span className="flex flex-col">
-        <span className="font-sans text-2xl font-bold leading-none text-[#f2f0e8]">HiOring</span>
-        <span className="mt-1 h-[3px] w-10 rounded-full bg-teal" />
-      </span>
-    </a>
-  );
-}
+import Logo from '../common/Logo';
 
 const bullets = [
   'Unlimited candidates on every plan',
@@ -21,7 +9,7 @@ const bullets = [
 function AuthPanel() {
   return (
     <div className="hidden flex-col bg-plum px-10 py-8 text-[#f2f0e8] lg:flex lg:w-[44%]">
-      <Logo />
+      <Logo light />
       <div className="flex flex-1 flex-col justify-center">
         <p className="font-sans text-2xl font-semibold leading-snug md:text-[26px]">
           Set up your hiring workflow in minutes.

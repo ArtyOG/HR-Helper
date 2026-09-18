@@ -39,6 +39,8 @@ function Badge({ count }) {
   );
 }
 
+import UserMenu from '../common/UserMenu';
+
 function TopBar() {
   return (
     <div className="flex flex-wrap items-center justify-start gap-x-4 gap-y-3">
@@ -65,9 +67,7 @@ function TopBar() {
           <Badge count="2" />
         </button>
 
-        <span className="flex h-[43px] w-[43px] items-center justify-center rounded-full bg-teal text-sm font-bold uppercase text-white shadow-sm">
-          DS
-        </span>
+        <UserMenu />
       </div>
     </div>
   );

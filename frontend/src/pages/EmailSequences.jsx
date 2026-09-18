@@ -1,7 +1,16 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useLocation } from 'react-router-dom';
-import { createInterviewSlots, listForms, listSubmissions, sendTemplateEmail } from '../services/api';
+import {
+  createInterviewSlots,
+  listInterviewSlots,
+  sendTemplateEmail,
+  updateSubmissionStatus,
+} from '../services/api';
 import { PlusIcon, SlotGeneratorForm } from '../components/common/SlotGenerator';
+import { getApplicantName, initialsFromNameOrEmail } from '../utils/applicantName';
+import { useForms, useSubmissions, useFormDetail } from '../hooks/useWorkspaceData';
+import ScoreBadge from '../components/common/ScoreBadge';
+import UserMenu from '../components/common/UserMenu';
 
 const INITIAL_TEMPLATES = [
   {
@@ -119,46 +128,53 @@ function TemplateRow({ template, active, onSelect }) {
 }
 
 function SendModal({ template, draft, candidate, preloadedCandidates = [], onSelectCandidate, onClose }) {
-  const [recipient, setRecipient] = useState(candidate?.email ?? '');
   const [sending, setSending] = useState(false);
   const [error, setError] = useState('');
   const [sent, setSent] = useState(false);
-  const [manual, setManual] = useState(false);
   const [browsing, setBrowsing] = useState(!candidate);
-  const [forms, setForms] = useState([]);
-  const [formsLoading, setFormsLoading] = useState(true);
+  const [formDetails, setFormDetails] = useState(() => ({}));
   const [selectedFormId, setSelectedFormId] = useState(null);
   const [candidates, setCandidates] = useState([]);
-  const [candidatesLoading, setCandidatesLoading] = useState(false);
   const [candidatesError, setCandidatesError] = useState('');
   const [slotGenOpen, setSlotGenOpen] = useState(false);
   const [createdSlotCount, setCreatedSlotCount] = useState(0);
-  const inputRef = useRef(null);
+  const [sentCount, setSentCount] = useState(0);
 
   const isInterview = template?.id === 'interview';
   const preloaded = preloadedCandidates.length > 0 ? preloadedCandidates : candidate ? [candidate] : [];
   const multi = preloaded.length > 1;
 
-  useEffect(() => {
-    let cancelled = false;
-    listForms()
-      .then((data) => {
-        if (!cancelled) setForms(Array.isArray(data) ? data : []);
-      })
-      .catch(() => {
-        if (!cancelled) setCandidatesError('Could not load jobs. Please try again.');
-      })
-      .finally(() => {
-        if (!cancelled) setFormsLoading(false);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, []);
+  const { forms, loading: formsLoading } = useForms();
+  const {
+    submissions: candidatesData,
+    loading: candidatesLoading,
+    error: candidatesFetchError,
+  } = useSubmissions(selectedFormId, { enabled: !!selectedFormId });
+  const { detail: selectedFormDetail } = useFormDetail(selectedFormId, { enabled: !!selectedFormId });
+
+  const formList = Array.isArray(forms) ? forms : [];
 
   useEffect(() => {
-    if (manual) inputRef.current?.focus();
-  }, [manual]);
+    if (!selectedFormId) {
+      setCandidates([]);
+      return;
+    }
+    if (candidatesData == null) return;
+    setCandidates(Array.isArray(candidatesData) ? candidatesData : []);
+  }, [candidatesData, selectedFormId]);
+
+  useEffect(() => {
+    if (candidatesFetchError) {
+      setCandidatesError('Could not load candidates. Please try again.');
+    } else if (selectedFormId) {
+      setCandidatesError('');
+    }
+  }, [candidatesFetchError, selectedFormId]);
+
+  useEffect(() => {
+    if (!selectedFormId || !selectedFormDetail) return;
+    setFormDetails((prev) => ({ ...prev, [selectedFormId]: selectedFormDetail }));
+  }, [selectedFormDetail, selectedFormId]);
 
   useEffect(() => {
     if (sending) return undefined;
@@ -169,43 +185,26 @@ function SendModal({ template, draft, candidate, preloadedCandidates = [], onSel
     return () => window.removeEventListener('keydown', onKeyDown);
   }, [sending, onClose]);
 
-  useEffect(() => {
-    if (!selectedFormId) {
-      setCandidates([]);
-      return undefined;
-    }
-    let cancelled = false;
-    setCandidatesLoading(true);
-    setCandidatesError('');
-    listSubmissions(selectedFormId)
-      .then((data) => {
-        if (!cancelled) setCandidates(Array.isArray(data) ? data : []);
-      })
-      .catch(() => {
-        if (!cancelled) setCandidatesError('Could not load candidates. Please try again.');
-      })
-      .finally(() => {
-        if (!cancelled) setCandidatesLoading(false);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [selectedFormId]);
-
-  const selectedForm = forms.find((f) => f.id === selectedFormId) ?? null;
+  const selectedForm = formList.find((f) => f.id === selectedFormId) ?? null;
 
   const slotGenFormId = selectedFormId || preloaded[0]?.formId || null;
-  const slotGenFormTitle = selectedForm?.title || preloaded[0]?.jobTitle || '';
+  const slotGenFormTitle =
+    formList.find((f) => f.id === slotGenFormId)?.title ||
+    preloaded.find((c) => c.formId === slotGenFormId)?.jobTitle ||
+    selectedForm?.title ||
+    '';
 
   const handleToggleSlotGen = () => setSlotGenOpen((open) => !open);
 
   const handleSlotsCreated = async (slots) => {
     await createInterviewSlots(slotGenFormId, slots);
     setCreatedSlotCount(slots.length);
+    setError('');
   };
 
   const rankedCandidates = [...candidates]
     .filter((s) => s.email)
+    .filter((s) => s.status === 'PENDING')
     .sort((a, b) => {
       const sa = Number(a.cvEvaluation?.score) || -1;
       const sb = Number(b.cvEvaluation?.score) || -1;
@@ -218,32 +217,70 @@ function SendModal({ template, draft, candidate, preloadedCandidates = [], onSel
   };
 
   const handlePickCandidate = (sub) => {
-    setRecipient(sub.email);
     onSelectCandidate({
       email: sub.email,
       submissionId: sub.id,
       formId: selectedFormId,
       jobTitle: selectedForm?.title ?? null,
+      status: sub.status,
     });
-    setManual(false);
     setBrowsing(false);
   };
 
   const handleSend = async (event) => {
     if (event?.preventDefault) event.preventDefault();
 
-    if (preloaded.length > 0) {
-      const invalid = preloaded.filter((c) => !EMAIL_PATTERN.test((c.email || '').trim()));
-      if (invalid.length) {
-        setError('Some selected candidates have invalid email addresses.');
-        return;
+    if (template.id === 'interview') {
+      const formId = slotGenFormId;
+      if (formId) {
+        let hasSlots = false;
+        try {
+          const slots = await listInterviewSlots(formId);
+          hasSlots = Array.isArray(slots) && slots.length > 0;
+        } catch {
+          hasSlots = false;
+        }
+        if (!hasSlots) {
+          setError('Create interview time slots before sending the invitation.');
+          return;
+        }
       }
-      setError('');
-      setSending(true);
-      try {
-        for (const c of preloaded) {
-          const form = forms.find((f) => f.id === c.formId);
-          const title = c.jobTitle || form?.title || '';
+    }
+
+    const recipients = preloaded.length > 0 ? preloaded : candidate ? [candidate] : [];
+    if (recipients.length === 0) {
+      setError('Select a candidate to continue.');
+      return;
+    }
+
+    const invalid = recipients.filter((c) => !EMAIL_PATTERN.test((c.email || '').trim()));
+    if (invalid.length) {
+      setError('Some selected candidates have invalid email addresses.');
+      return;
+    }
+
+    const alreadyContacted = recipients.filter(
+      (c) => c?.status === 'APPROVED' || c?.status === 'REJECTED'
+    );
+    const pending = recipients.filter(
+      (c) => c?.status !== 'APPROVED' && c?.status !== 'REJECTED'
+    );
+    if (pending.length === 0) {
+      setError('Nothing to send — every selected candidate has already been invited or rejected.');
+      return;
+    }
+
+    const targetStatus = template.id === 'rejection' ? 'REJECTED' : 'APPROVED';
+
+    setError('');
+    setSending(true);
+    let sentForClick = 0;
+    const failures = [];
+    try {
+      for (const c of pending) {
+        const form = formList.find((f) => f.id === c.formId);
+        const title = c.jobTitle || form?.title || '';
+        try {
           await sendTemplateEmail({
             to: c.email,
             subject: draft.subject,
@@ -257,39 +294,37 @@ function SendModal({ template, draft, candidate, preloadedCandidates = [], onSel
                 : '',
             },
           });
+          sentForClick += 1;
+          if (c.formId && c.submissionId) {
+            try {
+              await updateSubmissionStatus(c.formId, c.submissionId, targetStatus);
+            } catch {
+              // email delivered; status marking is best-effort here
+            }
+          }
+        } catch {
+          failures.push(c.email);
         }
-        setSent(true);
-      } catch (err) {
-        setError(err?.message || 'Failed to send the emails. Please try again.');
-      } finally {
-        setSending(false);
       }
-      return;
-    }
-
-    const trimmed = recipient.trim();
-    if (!trimmed) {
-      setError('Select a candidate or enter a recipient email address.');
-      return;
-    }
-    if (!EMAIL_PATTERN.test(trimmed)) {
-      setError('That doesn\u2019t look like a valid email address.');
-      return;
-    }
-    setError('');
-    setSending(true);
-    try {
-      await sendTemplateEmail({
-        to: trimmed,
-        subject: draft.subject,
-        templateName: template.id,
-        context: {},
-      });
-      setSent(true);
-    } catch (err) {
-      setError(err?.message || 'Failed to send the email. Please try again.');
     } finally {
       setSending(false);
+    }
+
+    if (failures.length === 0) {
+      setSentCount(sentForClick);
+      setSent(true);
+    } else if (sentForClick > 0) {
+      setSentCount(sentForClick);
+      setError(
+        `${failures.length} of ${recipients.length} email${failures.length === 1 ? '' : 's'} failed to send. The rest were sent and marked.`
+      );
+      setSent(true);
+    } else {
+      setError(
+        failures.length === 1
+          ? 'Failed to send the email. Please try again.'
+          : `Failed to send ${failures.length} email${failures.length === 1 ? '' : 's'}. Please try again.`
+      );
     }
   };
 
@@ -297,6 +332,7 @@ function SendModal({ template, draft, candidate, preloadedCandidates = [], onSel
     <ul className="mt-2 max-h-[260px] divide-y divide-plum/10 overflow-y-auto rounded-xl bg-white ring-1 ring-plum/10">
       {subs.map((sub) => {
         const score = Number(sub.cvEvaluation?.score);
+        const name = getApplicantName(sub, formDetails[sub.formId]);
         return (
           <li key={sub.id}>
             <button
@@ -305,23 +341,17 @@ function SendModal({ template, draft, candidate, preloadedCandidates = [], onSel
               className="flex w-full items-center gap-3 px-4 py-3 text-left transition hover:bg-[#f2f0e8]"
             >
               <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-teal text-xs font-bold uppercase text-white">
-                {initialsFromEmail(sub.email)}
+                {initialsFromNameOrEmail(name === sub.email ? '' : name, sub.email)}
               </span>
               <span className="min-w-0 flex-1">
-                <span className="block truncate text-sm font-semibold text-[#344e41]">{sub.email}</span>
+                <span className="block truncate text-sm font-semibold text-[#344e41]">{name}</span>
                 {sub.createdAt && (
                   <span className="mt-0.5 block text-[11px] text-stone-400">
                     Submitted {new Date(sub.createdAt).toLocaleDateString()}
                   </span>
                 )}
               </span>
-              <span
-                className={`shrink-0 rounded-full px-2 py-0.5 text-[11px] font-bold ${
-                  Number.isNaN(score) ? 'bg-stone-200 text-stone-500' : 'bg-gold/25 text-plum'
-                }`}
-              >
-                {Number.isNaN(score) ? 'No score' : `${score}/100`}
-              </span>
+              <ScoreBadge score={score} />
             </button>
           </li>
         );
@@ -365,13 +395,16 @@ function SendModal({ template, draft, candidate, preloadedCandidates = [], onSel
             <div className="flex items-start gap-3 rounded-xl bg-[#a7eda7]/40 px-4 py-3 text-sm font-semibold text-[#0d6921]">
               <CheckIcon />
               <span role="status">
-              {multi
-                ? `Email sent to ${preloaded.length} candidates.`
-                : preloaded.length === 1
-                ? `Email sent to ${preloaded[0].email}.`
-                : `Email sent to ${recipient.trim()}.`}
+              {sentCount === 1
+                ? `Email sent to ${sentCount} candidate.`
+                : `Email sent to ${sentCount} candidates.`}
             </span>
             </div>
+            {error && (
+              <p className="mt-3 rounded-lg bg-yellow-100 px-3 py-2 text-sm font-semibold text-yellow-800" role="alert">
+                {error}
+              </p>
+            )}
             <div className="mt-6 flex justify-end">
               <button
                 type="button"
@@ -416,42 +449,11 @@ function SendModal({ template, draft, candidate, preloadedCandidates = [], onSel
                   ))}
                 </ul>
                 <p className="mt-2 text-xs text-stone-500">
-                  An interview invitation with a personal scheduling link will be sent to each
-                  candidate.
+                  {isInterview
+                    ? 'An interview invitation with a personal scheduling link will be sent to each candidate.'
+                    : 'A rejection email will be sent to each candidate.'}
                 </p>
               </div>
-            ) : manual ? (
-              <>
-                <label className="mt-5 block">
-                  <span className="text-xs font-bold uppercase tracking-wider text-plum">
-                    Recipient email
-                  </span>
-                  <input
-                    ref={inputRef}
-                    type="email"
-                    value={recipient}
-                    onChange={(e) => setRecipient(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') {
-                        e.preventDefault();
-                        handleSend(e);
-                      }
-                    }}
-                    placeholder="candidate@example.com"
-                    className="mt-2 h-12 w-full rounded-xl border border-plum/10 bg-white px-4 text-sm text-stone-800 shadow-sm outline-none transition placeholder:text-stone-400 focus:border-teal focus:ring-2 focus:ring-teal/20"
-                  />
-                </label>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setManual(false);
-                    setBrowsing(true);
-                  }}
-                  className="mt-3 inline-flex items-center gap-1 text-xs font-semibold text-plum transition hover:text-plum-dark"
-                >
-                  <span aria-hidden="true">&larr;</span> Pick a candidate instead
-                </button>
-              </>
             ) : browsing ? (
               <div className="mt-5">
                 <span className="text-xs font-bold uppercase tracking-wider text-plum">
@@ -467,13 +469,13 @@ function SendModal({ template, draft, candidate, preloadedCandidates = [], onSel
                       <p className="mt-3 rounded-xl bg-white px-4 py-6 text-center text-sm text-stone-500 ring-1 ring-plum/10">
                         Loading jobs&hellip;
                       </p>
-                    ) : forms.length === 0 ? (
+                    ) : formList.length === 0 ? (
                       <p className="mt-3 rounded-xl bg-white px-4 py-6 text-center text-sm text-stone-500 ring-1 ring-plum/10">
                         No jobs available yet. Create one to pick candidates.
                       </p>
                     ) : (
                       <ul className="mt-2 max-h-[260px] divide-y divide-plum/10 overflow-y-auto rounded-xl bg-white ring-1 ring-plum/10">
-                        {forms.map((form) => {
+                        {formList.map((form) => {
                           const count = Number(form.submissionCount) || 0;
                           return (
                             <li key={form.id}>
@@ -519,7 +521,9 @@ function SendModal({ template, draft, candidate, preloadedCandidates = [], onSel
                       </p>
                     ) : rankedCandidates.length === 0 ? (
                       <p className="mt-3 rounded-xl bg-white px-4 py-6 text-center text-sm text-stone-500 ring-1 ring-plum/10">
-                        No candidates on this job yet.
+                        {candidates.length > 0
+                          ? 'All candidates on this job have already been marked (approved or rejected).'
+                          : 'No candidates on this job yet.'}
                       </p>
                     ) : (
                       renderCandidateList(rankedCandidates)
@@ -527,13 +531,7 @@ function SendModal({ template, draft, candidate, preloadedCandidates = [], onSel
                   </>
                 )}
 
-                <button
-                  type="button"
-                  onClick={() => setManual(true)}
-                  className="mt-3 inline-flex items-center gap-1 text-xs font-semibold text-plum transition hover:text-plum-dark"
-                >
-                  Enter an email manually
-                </button>
+                
               </div>
             ) : (
               <div className="mt-5">
@@ -562,17 +560,11 @@ function SendModal({ template, draft, candidate, preloadedCandidates = [], onSel
                     Change
                   </button>
                 </div>
-                <button
-                  type="button"
-                  onClick={() => setManual(true)}
-                  className="mt-3 inline-flex items-center gap-1 text-xs font-semibold text-plum transition hover:text-plum-dark"
-                >
-                  Enter an email manually
-                </button>
+                
               </div>
             )}
 
-            {slotGenFormId && (
+            {isInterview && slotGenFormId && (
               <div className="mt-4">
                 <button
                   type="button"
@@ -645,7 +637,7 @@ function SendModal({ template, draft, candidate, preloadedCandidates = [], onSel
                 ) : (
                   <>
                     <SendIcon />
-                    {multi ? `Send ${preloaded.length} invitations` : 'Send email'}
+                    {multi ? `Send ${preloaded.length} ${isInterview ? 'invitations' : 'emails'}` : 'Send email'}
                   </>
                 )}
               </button>
@@ -685,10 +677,11 @@ function EmailSequences() {
   useEffect(() => {
     if (incomingCandidates.length === 0 || autoOpened) return;
     setAutoOpened(true);
-    setSelectedId('interview');
-    const interviewTemplate = templates.find((t) => t.id === 'interview');
-    if (interviewTemplate) setSendTarget(interviewTemplate);
-  }, [incomingCandidates, autoOpened, templates]);
+    const templateId = location.state?.templateId === 'rejection' ? 'rejection' : 'interview';
+    setSelectedId(templateId);
+    const targetTemplate = templates.find((t) => t.id === templateId);
+    if (targetTemplate) setSendTarget(targetTemplate);
+  }, [incomingCandidates, autoOpened, templates, location.state]);
 
   const selectTemplate = (id) => {
     setSelectedId(id);
@@ -740,9 +733,7 @@ function EmailSequences() {
             <MessageIcon />
             <Badge count="2" />
           </button>
-          <span className="flex h-[43px] w-[43px] items-center justify-center rounded-full bg-teal text-sm font-bold uppercase text-white shadow-sm">
-            DS
-          </span>
+          <UserMenu />
         </div>
       </div>
 
@@ -838,8 +829,11 @@ function EmailSequences() {
                 ))}
               </div>
               <p className="mt-2 text-xs text-stone-500">
-                Click Send to open the interview form, set up time slots, and invite these
-                candidates.
+                {selectedId === 'rejection'
+                  ? 'Click Send to compose rejection emails for these candidates.'
+                  : selectedId === 'interview'
+                  ? 'Click Send to open the interview form, set up time slots, and invite these candidates.'
+                  : 'Click Send to email these candidates.'}
               </p>
             </div>
           )}

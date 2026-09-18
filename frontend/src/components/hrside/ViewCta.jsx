@@ -1,11 +1,9 @@
 import { useState } from 'react';
 import { useNavigation } from '../../context/NavigationContext';
-import ConfirmModal from '../common/ConfirmModal';
 
 function ViewCta() {
   const { goToWorkspace } = useNavigation();
   const [hovered, setHovered] = useState(false);
-  const [showConfirm, setShowConfirm] = useState(false);
 
   return (
     <section id="view" className="bg-[#fffef9] pb-24 lg:pb-32">
@@ -28,7 +26,7 @@ function ViewCta() {
               onMouseLeave={() => setHovered(false)}
               onClick={(e) => {
                 e.preventDefault();
-                setShowConfirm(true);
+                goToWorkspace();
               }}
               className={`inline-flex items-center rounded-[20px] px-8 py-4 text-base font-semibold text-plum transition-colors duration-200 ${
                 hovered ? 'border border-transparent' : 'border border-black'
@@ -55,18 +53,6 @@ function ViewCta() {
           </div>
         </div>
       </div>
-
-      <ConfirmModal
-        open={showConfirm}
-        onClose={() => setShowConfirm(false)}
-        onConfirm={() => {
-          setShowConfirm(false);
-          goToWorkspace();
-        }}
-        title="Enter Workspace"
-        message="This is linked to Workspace, would you like to to enter?"
-        confirmLabel="Yes, enter"
-      />
     </section>
   );
 }

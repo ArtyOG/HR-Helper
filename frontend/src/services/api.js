@@ -5,12 +5,6 @@ export function googleAuthUrl() {
   return `${API_URL}/auth/google`;
 }
 
-export async function getApiHealth() {
-  const response = await fetch(`${API_URL}${API_PREFIX}/health`);
-  if (!response.ok) throw new Error('API health request failed');
-  return response.json();
-}
-
 async function request(path, { method = 'GET', body } = {}) {
   const headers = { 'Content-Type': 'application/json' };
 
@@ -23,6 +17,9 @@ async function request(path, { method = 'GET', body } = {}) {
 
   const data = await response.json().catch(() => null);
   if (!response.ok) {
+    if (response.status === 401) {
+      window.dispatchEvent(new Event('auth:unauthorized'));
+    }
     const error = new Error(data?.message || `Request failed (${response.status})`);
     error.status = response.status;
     throw error;

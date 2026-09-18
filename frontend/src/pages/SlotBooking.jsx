@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import {
   getForm,
@@ -19,6 +19,27 @@ const fmtTime = (value) => {
   const d = new Date(value);
   if (Number.isNaN(d.getTime())) return '';
   return d.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
+};
+
+const toCalendarStamp = (value) => {
+  const d = new Date(value);
+  if (Number.isNaN(d.getTime())) return '';
+  return d.toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '');
+};
+
+const buildGoogleCalendarUrl = (booking, form) => {
+  const params = new URLSearchParams({
+    action: 'TEMPLATE',
+    text: form?.title ? `Interview – ${form.title}` : 'Interview',
+    dates: `${toCalendarStamp(booking.startTime)}/${toCalendarStamp(booking.endTime)}`,
+  });
+  if (booking.meetingLink) {
+    params.set('location', booking.meetingLink);
+    params.set('details', `Join: ${booking.meetingLink}`);
+  } else {
+    params.set('details', 'Interview scheduled via HiOring.');
+  }
+  return `https://calendar.google.com/calendar/render?${params.toString()}`;
 };
 
 function CheckIcon() {
@@ -66,6 +87,23 @@ function SlotBooking() {
   const [error, setError] = useState('');
   const [bookingId, setBookingId] = useState(null);
   const [bookError, setBookError] = useState('');
+
+  const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+
+  const groupedSlots = useMemo(() => {
+    const map = new Map();
+    const groups = [];
+    slots.forEach((slot) => {
+      const key = new Date(slot.startTime).toDateString();
+      if (!map.has(key)) {
+        const group = { key, date: slot.startTime, slots: [] };
+        map.set(key, group);
+        groups.push(group);
+      }
+      map.get(key).slots.push(slot);
+    });
+    return groups;
+  }, [slots]);
 
   useEffect(() => {
     if (!formId || !submissionId) return;
@@ -119,6 +157,13 @@ function SlotBooking() {
       const booked = await bookInterviewSlot(submissionId, slotId);
       setBooking(booked);
     } catch (err) {
+      if (err?.status === 400) {
+        try {
+          const existing = await getInterviewBooking(submissionId);
+          setBooking(existing);
+          return;
+        } catch {}
+      }
       setBookError(err?.message || 'Could not book this slot. Please try again.');
       if (err?.status === 409) {
         try {
@@ -150,8 +195,21 @@ function SlotBooking() {
       <main className="flex-grow">
         <div className="mx-auto w-full max-w-3xl px-5 py-8 lg:px-8">
           {loading ? (
-            <div className="rounded-[20px] bg-white/60 px-5 py-6 text-sm text-stone-500 ring-1 ring-plum/10">
-              Loading interview times...
+            <div className="space-y-3">
+              <div className="h-7 w-2/3 animate-pulse rounded-full bg-white/70" />
+              <div className="h-4 w-1/2 animate-pulse rounded-full bg-white/60" />
+              {[0, 1, 2].map((i) => (
+                <div
+                  key={i}
+                  className="flex items-center justify-between gap-4 rounded-[20px] bg-white/60 p-5 ring-1 ring-plum/10"
+                >
+                  <div className="space-y-2">
+                    <div className="h-4 w-40 animate-pulse rounded-full bg-plum/10" />
+                    <div className="h-3 w-24 animate-pulse rounded-full bg-plum/10" />
+                  </div>
+                  <div className="h-10 w-32 animate-pulse rounded-full bg-plum/10" />
+                </div>
+              ))}
             </div>
           ) : error ? (
             <div className="rounded-[20px] bg-[#f2efe7] p-5 ring-1 ring-plum/10 sm:p-8">
@@ -187,8 +245,18 @@ function SlotBooking() {
                     Join meeting
                   </a>
                 )}
+                <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
+                  <a
+                    href={buildGoogleCalendarUrl(booking, form)}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-flex items-center gap-2 rounded-full border border-plum/20 px-5 py-2.5 text-sm font-bold text-plum transition hover:bg-plum hover:text-white"
+                  >
+                    Add to Google Calendar
+                  </a>
+                </div>
                 <p className="mt-6 text-xs text-stone-400">
-                  A confirmation was sent to your application email address.
+                  Keep this link handy — you can revisit it anytime to view your interview details.
                 </p>
               </div>
             </div>
@@ -200,6 +268,9 @@ function SlotBooking() {
               <p className="mt-3 text-sm leading-relaxed text-stone-600">
                 Great news — your application has moved forward. Pick a time below that works best
                 for you.
+              </p>
+              <p className="mt-2 text-xs font-semibold text-stone-400">
+                All times shown in {timezone}.
               </p>
 
               {bookError && (
@@ -220,35 +291,44 @@ function SlotBooking() {
                   </p>
                 </div>
               ) : (
-                <ul className="mt-6 space-y-3">
-                  {slots.map((slot) => {
-                    const pending = bookingId === slot.id;
-                    return (
-                      <li
-                        key={slot.id}
-                        className="rounded-[20px] bg-white/70 p-5 ring-1 ring-plum/10 transition hover:shadow-md"
-                      >
-                        <div className="flex w-full items-center justify-between gap-4">
-                          <div className="min-w-0">
-                            <p className="font-semibold text-plum">{fmtDate(slot.startTime)}</p>
-                            <p className="mt-1 flex items-center gap-1.5 text-sm text-stone-500">
-                              <ClockIcon />
-                              {fmtTime(slot.startTime)} – {fmtTime(slot.endTime)}
-                            </p>
-                          </div>
-                          <button
-                            type="button"
-                            onClick={() => handleBook(slot.id)}
-                            disabled={bookingId !== null}
-                            className="flex shrink-0 items-center gap-2 rounded-full bg-plum px-5 py-2.5 text-sm font-bold text-white transition hover:bg-plum-dark disabled:cursor-not-allowed disabled:opacity-60"
-                          >
-                            {pending ? 'Booking...' : 'Book this time'}
-                            {!pending && <ChevronIcon />}
-                          </button>
-                        </div>
-                      </li>
-                    );
-                  })}
+                <ul className="mt-6 space-y-6">
+                  {groupedSlots.map((group) => (
+                    <li key={group.key}>
+                      <p className="mb-3 text-xs font-bold uppercase tracking-wider text-stone-400">
+                        {fmtDate(group.date)}
+                      </p>
+                      <ul className="space-y-3">
+                        {group.slots.map((slot) => {
+                          const pending = bookingId === slot.id;
+                          return (
+                            <li
+                              key={slot.id}
+                              className="rounded-[20px] bg-white/70 p-5 ring-1 ring-plum/10 transition hover:shadow-md"
+                            >
+                              <div className="flex w-full items-center justify-between gap-4">
+                                <div className="min-w-0">
+                                  <p className="font-semibold text-plum">{fmtDate(slot.startTime)}</p>
+                                  <p className="mt-1 flex items-center gap-1.5 text-sm text-stone-500">
+                                    <ClockIcon />
+                                    {fmtTime(slot.startTime)} – {fmtTime(slot.endTime)}
+                                  </p>
+                                </div>
+                                <button
+                                  type="button"
+                                  onClick={() => handleBook(slot.id)}
+                                  disabled={bookingId !== null}
+                                  className="flex shrink-0 items-center gap-2 rounded-full bg-plum px-5 py-2.5 text-sm font-bold text-white transition hover:bg-plum-dark disabled:cursor-not-allowed disabled:opacity-60"
+                                >
+                                  {pending ? 'Booking...' : 'Book this time'}
+                                  {!pending && <ChevronIcon />}
+                                </button>
+                              </div>
+                            </li>
+                          );
+                        })}
+                      </ul>
+                    </li>
+                  ))}
                 </ul>
               )}
             </div>

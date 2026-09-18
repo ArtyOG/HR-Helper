@@ -1,14 +1,15 @@
 import { useEffect, useState } from 'react';
-import Navbar from '../components/user-workspace/Navbar';
 import TopBar from '../components/user-workspace/TopBar';
 import StatCards from '../components/user-workspace/StatCards';
-import TopRankedCandidates from '../components/user-workspace/TopRankedCandidates';
+import UpcomingInterviews from '../components/user-workspace/UpcomingInterviews';
 import JobListings from '../components/user-workspace/JobListings';
-import { listForms, listSubmissions } from '../services/api';
+import { fetchWorkspaceData, useForms } from '../hooks/useWorkspaceData';
+import { getApplicantName } from '../utils/applicantName';
 
 function User_Workspace() {
-  const [forms, setForms] = useState([]);
+  const { forms } = useForms();
   const [submissions, setSubmissions] = useState([]);
+  const [interviews, setInterviews] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -16,25 +17,52 @@ function User_Workspace() {
   }, []);
 
   useEffect(() => {
+    if (!forms) return undefined;
     let cancelled = false;
     (async () => {
       setLoading(true);
       try {
-        const formsData = await listForms();
+        const rows = await fetchWorkspaceData(
+          forms.filter((form) => (form.submissionCount ?? 0) > 0)
+        );
         if (cancelled) return;
+
+        const now = new Date();
+        const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        const startOfTomorrow = new Date(startOfToday);
+        startOfTomorrow.setDate(startOfTomorrow.getDate() + 1);
+        const startOfDayAfter = new Date(startOfTomorrow);
+        startOfDayAfter.setDate(startOfDayAfter.getDate() + 1);
+
         const allSubmissions = [];
-        for (const form of Array.isArray(formsData) ? formsData : []) {
-          if (form.submissionCount === 0) continue;
-          const subs = await listSubmissions(form.id).catch(() => []);
-          if (cancelled) return;
-          allSubmissions.push(...(Array.isArray(subs) ? subs : []));
-        }
-        setForms(Array.isArray(formsData) ? formsData : []);
+        const tomorrowInterviews = [];
+
+        rows.forEach(({ form, detail, submissions: subs, slots }) => {
+          allSubmissions.push(...subs);
+          (Array.isArray(slots) ? slots : []).forEach((slot) => {
+            if (slot.status !== 'BOOKED' || !slot.submissionId) return;
+            const start = new Date(slot.startTime);
+            if (start < startOfTomorrow || start >= startOfDayAfter) return;
+            const sub = subs.find((s) => s.id === slot.submissionId);
+            tomorrowInterviews.push({
+              slotId: slot.id,
+              start,
+              email: sub?.email || slot.submission?.email || '',
+              name: sub ? getApplicantName(sub, detail) : '',
+              role: detail?.title || form.title || '',
+              meetingLink: slot.meetingLink || '',
+            });
+          });
+        });
+
+        tomorrowInterviews.sort((a, b) => a.start - b.start);
+
         setSubmissions(allSubmissions);
+        setInterviews(tomorrowInterviews);
       } catch {
         if (!cancelled) {
-          setForms([]);
           setSubmissions([]);
+          setInterviews([]);
         }
       } finally {
         if (!cancelled) setLoading(false);
@@ -43,30 +71,19 @@ function User_Workspace() {
     return () => {
       cancelled = true;
     };
-  }, []);
-
-  const formsById = new Map(forms.map((f) => [f.id, f]));
+  }, [forms]);
 
   return (
-    <div className="flex min-h-screen bg-[#fffef9] font-sans text-stone-800 antialiased">
-      <Navbar />
-      <main className="min-w-0 flex-1 px-5 pb-10 pt-24 sm:px-8 lg:ml-[297px] lg:pt-10">
-        <div className="mx-auto max-w-site">
-          <TopBar />
-          <StatCards forms={forms} submissions={submissions} loading={loading} />
-          <div className="mt-6 grid grid-cols-1 gap-6 xl:grid-cols-3">
-            <div className="xl:col-span-2">
-              <TopRankedCandidates
-                formsById={formsById}
-                submissions={submissions}
-                loading={loading}
-              />
-            </div>
-            <JobListings forms={forms} loading={loading} />
-          </div>
+    <>
+      <TopBar />
+      <StatCards forms={forms} submissions={submissions} loading={loading} />
+      <div className="mt-6 grid grid-cols-1 gap-6 xl:grid-cols-3">
+        <div className="xl:col-span-2">
+          <UpcomingInterviews interviews={interviews} loading={loading} />
         </div>
-      </main>
-    </div>
+        <JobListings forms={forms} loading={loading} />
+      </div>
+    </>
   );
 }
 
