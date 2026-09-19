@@ -14,6 +14,7 @@ import ApplyForm from './pages/ApplyForm';
 import SubmissionsView from './pages/SubmissionsView';
 import InterviewScheduling from './pages/InterviewScheduling';
 import WorkspaceShell from './components/workspace/WorkspaceShell';
+import { Toaster } from 'sonner';
 
 
 // Live hot-reload verified with polling
@@ -189,6 +190,7 @@ function App() {
             <Route path="/login" element={<AuthModal />} />
           </Routes>
         )}
+        <Toaster position="bottom-right" richColors closeButton />
       </NavigationProvider>
     </AuthProvider>
   );

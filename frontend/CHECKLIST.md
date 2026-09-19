@@ -4,10 +4,4 @@
 
 ---
 
-## 1. Interview Timeslots: Backend Delete Endpoints Integration
-- [ ] **Backend Endpoint Implementation**:
-  - Add `DELETE /api/forms/:formId/interview-slots/:slotId` in `backend/src/modules/interview-slots` to allow HR users to permanently delete an individual unbooked interview slot from MySQL.
-  - Add `DELETE /api/forms/:formId/interview-slots` to allow HR users to clear all unbooked interview slots for a form.
-- [ ] **Frontend API Integration**:
-  - In `frontend/src/services/api.js`, add `deleteInterviewSlot(formId, slotId)` and `clearInterviewSlots(formId)`.
-  - Wire the inline `[X]` delete button and "Clear All" trigger in the Timeslot Manager to invoke the backend delete endpoints for previously persisted slots.
+*(No active tasks pending)*

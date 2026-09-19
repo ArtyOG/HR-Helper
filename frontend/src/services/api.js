@@ -171,4 +171,17 @@ export function bookInterviewSlot(submissionId, slotId) {
     method: 'POST',
     body: { slotId },
   });
-}
+}
+
+export function deleteInterviewSlot(formId, slotId) {
+  return request(`/forms/${formId}/interview-slots/${slotId}`, {
+    method: 'DELETE',
+  });
+}
+
+export function clearInterviewSlots(formId) {
+  return request(`/forms/${formId}/interview-slots`, {
+    method: 'DELETE',
+  });
+}
+

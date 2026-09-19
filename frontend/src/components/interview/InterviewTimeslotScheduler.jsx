@@ -6,7 +6,14 @@ import {
   formatTime12h,
   toSlotIso,
 } from '../../utils/timeslot';
-import { listInterviewSlots, createInterviewSlots } from '../../services/api';
+import {
+  listInterviewSlots,
+  createInterviewSlots,
+  deleteInterviewSlot,
+  clearInterviewSlots,
+} from '../../services/api';
+import { toast } from 'sonner';
+
 
 const DURATION_OPTIONS = [15, 30, 45, 60];
 
@@ -65,7 +72,7 @@ function mapBackendSlots(backendSlots) {
   });
 }
 
-function ClearAllSlotsModal({ open, slotCount, onClose, onConfirm }) {
+function ClearAllSlotsModal({ open, slotCount, totalCount, isClearing, onClose, onConfirm }) {
   const [isReady, setIsReady] = useState(false);
   const [progressStarted, setProgressStarted] = useState(false);
 
@@ -116,7 +123,7 @@ function ClearAllSlotsModal({ open, slotCount, onClose, onConfirm }) {
       role="dialog"
       aria-modal="true"
       aria-labelledby="clear-all-modal-title"
-      onClick={onClose}
+      onClick={isClearing ? undefined : onClose}
     >
       <div
         className="w-full max-w-sm rounded-[24px] bg-white p-6 shadow-2xl ring-1 ring-plum/10 animate-[auth-card-in_0.3s_cubic-bezier(0.16,1,0.3,1)]"
@@ -152,14 +159,20 @@ function ClearAllSlotsModal({ open, slotCount, onClose, onConfirm }) {
 
         <p className="mt-4 text-sm leading-relaxed text-stone-600">
           Are you sure you want to clear all{' '}
-          <strong className="font-semibold text-red-600">{slotCount}</strong> timeslots from this role?
+          <strong className="font-semibold text-red-600">{slotCount}</strong> unbooked timeslot{slotCount === 1 ? '' : 's'} from this role?
+          {totalCount > slotCount && (
+            <span className="mt-1.5 block text-xs font-medium text-amber-700">
+              Note: {totalCount - slotCount} booked timeslot{totalCount - slotCount === 1 ? '' : 's'} will be preserved.
+            </span>
+          )}
         </p>
 
         <div className="mt-6 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
           <button
             type="button"
             onClick={onClose}
-            className="h-10 rounded-full border border-stone-300 bg-white px-5 text-sm font-semibold text-stone-700 transition hover:bg-stone-50 active:scale-98"
+            disabled={isClearing}
+            className="h-10 rounded-full border border-stone-300 bg-white px-5 text-sm font-semibold text-stone-700 transition hover:bg-stone-50 active:scale-98 disabled:cursor-not-allowed disabled:opacity-50"
           >
             Cancel
           </button>
@@ -168,37 +181,51 @@ function ClearAllSlotsModal({ open, slotCount, onClose, onConfirm }) {
           <button
             type="button"
             onClick={onConfirm}
-            disabled={!isReady}
+            disabled={!isReady || isClearing}
             className={`relative h-10 w-full sm:w-36 overflow-hidden rounded-full border text-sm font-semibold transition-all select-none ${
-              isReady
+              isClearing
+                ? 'cursor-wait border-red-700 bg-red-700 text-white'
+                : isReady
                 ? 'cursor-pointer border-red-600 bg-red-600 text-white shadow-md hover:bg-red-700 active:scale-95'
                 : 'cursor-not-allowed border-red-300 bg-red-300/80 text-red-900'
             }`}
           >
-            {/* Base Layer (Unfilled disabled red state) */}
-            <span className="flex h-full w-full items-center justify-center gap-1.5 text-red-900">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4" aria-hidden="true">
-                <path d="M3 6h18" />
-                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
-              </svg>
-              <span>Clear All</span>
-            </span>
+            {isClearing ? (
+              <span className="flex h-full w-full items-center justify-center gap-1.5 text-white">
+                <svg className="h-4 w-4 animate-spin text-white" viewBox="0 0 24 24" fill="none">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
+                </svg>
+                <span>Clearing...</span>
+              </span>
+            ) : (
+              <>
+                {/* Base Layer (Unfilled disabled red state) */}
+                <span className="flex h-full w-full items-center justify-center gap-1.5 text-red-900">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4" aria-hidden="true">
+                    <path d="M3 6h18" />
+                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                  </svg>
+                  <span>Clear All</span>
+                </span>
 
-            {/* Sliding Color Overlay (Transforms into full red color from left to right like a slider) */}
-            <span
-              className="pointer-events-none absolute inset-0 flex h-full w-full items-center justify-center gap-1.5 bg-red-600 text-white transition-[clip-path] ease-linear"
-              style={{
-                clipPath: progressStarted || isReady ? 'inset(0 0% 0 0)' : 'inset(0 100% 0 0)',
-                transitionDuration: isReady ? '0ms' : '3000ms',
-              }}
-              aria-hidden="true"
-            >
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4" aria-hidden="true">
-                <path d="M3 6h18" />
-                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
-              </svg>
-              <span>Clear All</span>
-            </span>
+                {/* Sliding Color Overlay (Transforms into full red color from left to right like a slider) */}
+                <span
+                  className="pointer-events-none absolute inset-0 flex h-full w-full items-center justify-center gap-1.5 bg-red-600 text-white transition-[clip-path] ease-linear"
+                  style={{
+                    clipPath: progressStarted || isReady ? 'inset(0 0% 0 0)' : 'inset(0 100% 0 0)',
+                    transitionDuration: isReady ? '0ms' : '3000ms',
+                  }}
+                  aria-hidden="true"
+                >
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4" aria-hidden="true">
+                    <path d="M3 6h18" />
+                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                  </svg>
+                  <span>Clear All</span>
+                </span>
+              </>
+            )}
           </button>
         </div>
       </div>
@@ -212,6 +239,8 @@ export default function InterviewTimeslotScheduler({ formId, formTitle }) {
   // Slots & network state for this nested formId
   const [loadingBackendSlots, setLoadingBackendSlots] = useState(false);
   const [isSubmittingToBackend, setIsSubmittingToBackend] = useState(false);
+  const [deletingSlotId, setDeletingSlotId] = useState(null);
+  const [isClearing, setIsClearing] = useState(false);
 
   // Left Column Multi-Range Builder state
   const [date, setDate] = useState(getTodayString());
@@ -219,11 +248,11 @@ export default function InterviewTimeslotScheduler({ formId, formTitle }) {
   const [endTime, setEndTime] = useState('12:00');
   const [duration, setDuration] = useState(30);
   const [buffer, setBuffer] = useState(0);
-  const [batchNotice, setBatchNotice] = useState(null);
 
   // Right Column Selected Slots state
   const [slots, setSlots] = useState([]);
   const [showClearConfirm, setShowClearConfirm] = useState(false);
+
 
   // Fetch existing timeslots for this nested formId
   useEffect(() => {
@@ -305,11 +334,7 @@ export default function InterviewTimeslotScheduler({ formId, formTitle }) {
     }
 
     if (nonDuplicateSlots.length === 0) {
-      setBatchNotice({
-        type: 'warning',
-        text: `All ${duplicateCount} slots in this time window already exist for ${formatDateHeader(date)}.`,
-      });
-      setTimeout(() => setBatchNotice(null), 5000);
+      toast.warning(`All ${duplicateCount} slots in this time window already exist for ${formatDateHeader(date)}.`);
       return;
     }
 
@@ -321,16 +346,11 @@ export default function InterviewTimeslotScheduler({ formId, formTitle }) {
     });
 
     if (hasPastSlot) {
-      setBatchNotice({
-        type: 'error',
-        text: 'Cannot create interview slots in the past. Please select a future date or start time.',
-      });
-      setTimeout(() => setBatchNotice(null), 5000);
+      toast.error('Cannot create interview slots in the past. Please select a future date or start time.');
       return;
     }
 
     setIsSubmittingToBackend(true);
-    setBatchNotice(null);
 
     try {
       // Build ISO payload for backend: { slots: [{ startTime, endTime }] }
@@ -345,20 +365,15 @@ export default function InterviewTimeslotScheduler({ formId, formTitle }) {
       // Instantly update the right column list with fresh slots from the database
       setSlots(mapBackendSlots(freshSlotsFromBackend));
 
-      setBatchNotice({
-        type: 'success',
-        text: `Successfully created ${nonDuplicateSlots.length} timeslot${
+      toast.success(
+        `Successfully created ${nonDuplicateSlots.length} timeslot${
           nonDuplicateSlots.length === 1 ? '' : 's'
-        } in the database${
+        } ${
           duplicateCount > 0 ? ` (${duplicateCount} duplicate${duplicateCount === 1 ? '' : 's'} skipped)` : ''
-        }!`,
-      });
-      setTimeout(() => setBatchNotice(null), 5000);
+        }!`
+      );
     } catch (err) {
-      setBatchNotice({
-        type: 'error',
-        text: err.message || 'Failed to create interview timeslots in the backend.',
-      });
+      toast.error(err.message || 'Failed to create interview timeslots in the backend.');
     } finally {
       setIsSubmittingToBackend(false);
     }
@@ -390,16 +405,58 @@ export default function InterviewTimeslotScheduler({ formId, formTitle }) {
     return new Set(slots.map((s) => s.date)).size;
   }, [slots]);
 
-  // Remove individual slot from local view
-  const removeSlot = (slotId) => {
-    setSlots((prev) => prev.filter((s) => s.id !== slotId));
+  // Unbooked slots count
+  const unbookedSlotsCount = useMemo(() => {
+    return slots.filter((s) => s.status !== 'BOOKED').length;
+  }, [slots]);
+
+  // Remove individual slot from backend and local view
+  const handleDeleteSlot = async (slot) => {
+    if (!slot) return;
+    if (slot.status === 'BOOKED') {
+      toast.warning('Booked interview timeslots cannot be deleted.');
+      return;
+    }
+
+    if (slot.backendId && formId) {
+      setDeletingSlotId(slot.id);
+      try {
+        await deleteInterviewSlot(formId, slot.backendId);
+        setSlots((prev) => prev.filter((s) => s.id !== slot.id));
+        toast.success('Interview timeslot deleted successfully.');
+      } catch (err) {
+        toast.error(err.message || 'Failed to delete interview timeslot.');
+      } finally {
+        setDeletingSlotId(null);
+      }
+    } else {
+      setSlots((prev) => prev.filter((s) => s.id !== slot.id));
+    }
   };
 
-  // Clear all slots from current list
-  const handleClearAll = () => {
-    setSlots([]);
-    setShowClearConfirm(false);
+  // Clear all unbooked slots from backend and local view
+  const handleClearAll = async () => {
+    if (!formId) {
+      setSlots([]);
+      setShowClearConfirm(false);
+      return;
+    }
+
+    setIsClearing(true);
+    try {
+      await clearInterviewSlots(formId);
+      // Refresh slots from backend to ensure consistent state
+      const freshSlots = await listInterviewSlots(formId);
+      setSlots(mapBackendSlots(freshSlots));
+      setShowClearConfirm(false);
+      toast.success('All unbooked interview timeslots cleared successfully.');
+    } catch (err) {
+      toast.error(err.message || 'Failed to clear interview timeslots.');
+    } finally {
+      setIsClearing(false);
+    }
   };
+
 
   return (
     <div className="w-full space-y-6 font-sans">
@@ -587,21 +644,6 @@ export default function InterviewTimeslotScheduler({ formId, formTitle }) {
                     </div>
                   </div>
                 )}
-
-                {/* Notice Banner */}
-                {batchNotice && (
-                  <div
-                    className={`rounded-xl p-3 text-xs font-semibold transition ${
-                      batchNotice.type === 'success'
-                        ? 'bg-green-50 text-green-800 ring-1 ring-green-200'
-                        : batchNotice.type === 'error'
-                        ? 'bg-red-50 text-red-700 ring-1 ring-red-200'
-                        : 'bg-amber-50 text-amber-800 ring-1 ring-amber-200'
-                    }`}
-                  >
-                    {batchNotice.text}
-                  </div>
-                )}
               </div>
 
               {/* 6. Primary Action Button */}
@@ -664,7 +706,9 @@ export default function InterviewTimeslotScheduler({ formId, formTitle }) {
                   <button
                     type="button"
                     onClick={() => setShowClearConfirm(true)}
-                    className="rounded-lg border border-red-200 bg-red-50 px-3 py-1.5 text-xs font-bold text-red-600 transition hover:bg-red-100"
+                    disabled={unbookedSlotsCount === 0 || isClearing}
+                    title={unbookedSlotsCount === 0 ? 'No unbooked timeslots to clear' : 'Clear all unbooked timeslots'}
+                    className="rounded-lg border border-red-200 bg-red-50 px-3 py-1.5 text-xs font-bold text-red-600 transition hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-40"
                   >
                     Clear All
                   </button>
@@ -762,28 +806,39 @@ export default function InterviewTimeslotScheduler({ formId, formTitle }) {
                                 <button
                                   type="button"
                                   aria-label="Delete timeslot"
-                                  onClick={() => removeSlot(slot.id)}
-                                  className={`ml-2 flex h-6 w-6 shrink-0 items-center justify-center rounded-md transition hover:bg-red-500/20 active:scale-95 ${
+                                  disabled={isBooked || deletingSlotId === slot.id}
+                                  title={isBooked ? 'Booked slots cannot be deleted' : 'Delete timeslot'}
+                                  onClick={() => handleDeleteSlot(slot)}
+                                  className={`ml-2 flex h-6 w-6 shrink-0 items-center justify-center rounded-md transition ${
                                     isBooked
-                                      ? 'text-red-500 hover:text-red-700'
-                                      : 'text-red-400 hover:text-red-300'
+                                      ? 'cursor-not-allowed opacity-30 text-stone-400'
+                                      : deletingSlotId === slot.id
+                                      ? 'cursor-wait opacity-60 text-red-400'
+                                      : 'text-red-400 hover:bg-red-500/20 hover:text-red-300 active:scale-95'
                                   }`}
                                 >
-                                  <svg
-                                    viewBox="0 0 24 24"
-                                    fill="none"
-                                    stroke="currentColor"
-                                    strokeWidth="2"
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                    className="h-3.5 w-3.5"
-                                    aria-hidden="true"
-                                  >
-                                    <path d="M3 6h18" />
-                                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
-                                    <line x1="10" y1="11" x2="10" y2="17" />
-                                    <line x1="14" y1="11" x2="14" y2="17" />
-                                  </svg>
+                                  {deletingSlotId === slot.id ? (
+                                    <svg className="h-3.5 w-3.5 animate-spin text-red-400" viewBox="0 0 24 24" fill="none">
+                                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
+                                    </svg>
+                                  ) : (
+                                    <svg
+                                      viewBox="0 0 24 24"
+                                      fill="none"
+                                      stroke="currentColor"
+                                      strokeWidth="2"
+                                      strokeLinecap="round"
+                                      strokeLinejoin="round"
+                                      className="h-3.5 w-3.5"
+                                      aria-hidden="true"
+                                    >
+                                      <path d="M3 6h18" />
+                                      <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                                      <line x1="10" y1="11" x2="10" y2="17" />
+                                      <line x1="14" y1="11" x2="14" y2="17" />
+                                    </svg>
+                                  )}
                                 </button>
                               </div>
                             );
@@ -815,10 +870,12 @@ export default function InterviewTimeslotScheduler({ formId, formTitle }) {
           </div>
         </div>
       </div>
-      {/* Clear All Confirmation Modal with 5-second countdown */}
+      {/* Clear All Confirmation Modal with 3-second countdown */}
       <ClearAllSlotsModal
         open={showClearConfirm}
-        slotCount={slots.length}
+        slotCount={unbookedSlotsCount}
+        totalCount={slots.length}
+        isClearing={isClearing}
         onClose={() => setShowClearConfirm(false)}
         onConfirm={handleClearAll}
       />

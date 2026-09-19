@@ -13,6 +13,7 @@ describe('InterviewSlotsController', () => {
   let service: {
     deleteSlot: jest.Mock;
     clearSlots: jest.Mock;
+    findAll: jest.Mock;
     createSlots: jest.Mock;
     findAllByFormId: jest.Mock;
     findAvailableByFormId: jest.Mock;
