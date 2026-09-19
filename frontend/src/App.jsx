@@ -12,8 +12,11 @@ import EditForm from './pages/EditForm';
 import FormView from './pages/FormView';
 import ApplyForm from './pages/ApplyForm';
 import SubmissionsView from './pages/SubmissionsView';
+import InterviewScheduling from './pages/InterviewScheduling';
 import WorkspaceShell from './components/workspace/WorkspaceShell';
 
+
+// Live hot-reload verified with polling
 function RequireAuth({ children }) {
   const { user, loading, authError } = useAuth();
 
@@ -40,6 +43,7 @@ function RequireAuth({ children }) {
 }
 
 function App() {
+
   const location = useLocation();
   const background = location.state && location.state.background;
 
@@ -99,6 +103,15 @@ function App() {
             }
           />
           <Route
+            path="/hr/forms/:formId/interviews"
+            element={
+              <RequireAuth>
+                <InterviewScheduling />
+              </RequireAuth>
+            }
+          />
+
+          <Route
             path="/workspace"
             element={
               <RequireAuth>
@@ -114,7 +127,11 @@ function App() {
               </RequireAuth>
             }
           />
+
+
+
           <Route
+
             path="/workspace/forms/new"
             element={
               <RequireAuth>
@@ -154,6 +171,17 @@ function App() {
               </RequireAuth>
             }
           />
+          <Route
+            path="/workspace/forms/:formId/interviews"
+            element={
+              <RequireAuth>
+                <WorkspaceShell>
+                  <InterviewScheduling />
+                </WorkspaceShell>
+              </RequireAuth>
+            }
+          />
+
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
         {background && (

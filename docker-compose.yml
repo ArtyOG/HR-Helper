@@ -51,8 +51,13 @@ services:
       VITE_API_URL: ${VITE_API_URL:-http://localhost:3000}
     ports:
       - "5173:5173"
+    volumes:
+      - ./frontend/src:/app/src
+      - ./frontend/vite.config.js:/app/vite.config.js
+      - ./frontend/index.html:/app/index.html
     depends_on:
       - backend
+
 
   ai-service:
     build: ./ai-service

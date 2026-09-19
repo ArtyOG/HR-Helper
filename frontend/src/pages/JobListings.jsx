@@ -223,7 +223,7 @@ function IconTrash() {
   );
 }
 
-function JobCard({ job, onApplicants, onEdit, onDelete, onDuplicate, onCopyLink, onCloseNow, onOpen, onSubmissions, onPreview }) {
+function JobCard({ job, onApplicants, onEdit, onDelete, onDuplicate, onCopyLink, onCloseNow, onOpen, onSubmissions, onPreview, onInterviews }) {
   return (
     <article
       role="button"
@@ -250,6 +250,7 @@ function JobCard({ job, onApplicants, onEdit, onDelete, onDuplicate, onCopyLink,
         <ActionIconRow
           items={[
             ...(onCopyLink ? [{ label: 'Copy link', onClick: onCopyLink, icon: <IconLink /> }] : []),
+            ...(onInterviews ? [{ label: 'Interview slots', onClick: onInterviews, icon: <IconCalendar /> }] : []),
             ...(onApplicants ? [{ label: 'Applicants', onClick: onApplicants, icon: <UsersIcon /> }] : []),
             ...(onEdit ? [{ label: 'Edit form', onClick: onEdit, icon: <IconPencil /> }] : []),
             ...(onDuplicate ? [{ label: 'Duplicate form', onClick: onDuplicate, icon: <IconCopy /> }] : []),
@@ -258,6 +259,7 @@ function JobCard({ job, onApplicants, onEdit, onDelete, onDuplicate, onCopyLink,
             ...(onDelete ? [{ label: 'Delete form', danger: true, onClick: onDelete, icon: <IconTrash /> }] : []),
           ]}
         />
+
 
         <div
           className="popup popup--desktop-hidden md:hidden"
@@ -313,7 +315,22 @@ function JobCard({ job, onApplicants, onEdit, onDelete, onDuplicate, onCopyLink,
                   </button>
                 </li>
               )}
+              {onInterviews && (
+                <li>
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onInterviews();
+                    }}
+                  >
+                    <IconCalendar />
+                    Interview slots
+                  </button>
+                </li>
+              )}
               {(onCloseNow || onOpen) && <hr />}
+
               {onCloseNow && (
                 <li>
                   <button
@@ -443,8 +460,16 @@ function JobCard({ job, onApplicants, onEdit, onDelete, onDuplicate, onCopyLink,
 }
 
 function JobListingsPage() {
-  const { goToSubmissionsWs, goToFormViewWs, goToEditFormWs, goToCreateFormWs } = useNavigation();
+  const {
+    goToSubmissionsWs,
+    goToFormViewWs,
+    goToEditFormWs,
+    goToCreateFormWs,
+    goToInterviewsWs,
+  } = useNavigation();
+
   const [forms, setForms] = useState([]);
+
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const now = useNow(getNextFormsStatusTime(forms));
@@ -624,7 +649,10 @@ function JobListingsPage() {
                         onOpen={job.status === 'Closed' ? () => setOpenTarget(job.form) : undefined}
                         onSubmissions={() => goToSubmissionsWs(job.id)}
                         onPreview={() => goToFormViewWs(job.id)}
+                        onInterviews={() => goToInterviewsWs(job.id)}
                       />
+
+
                     ))}
                   </div>
                 ) : (

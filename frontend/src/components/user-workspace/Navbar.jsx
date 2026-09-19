@@ -145,10 +145,10 @@ function LogoutIcon() {
 
 const mainNav = [
   { label: 'Dashboards', icon: DashboardIcon, navigate: 'workspace' },
-  { label: 'Candidates Interview', icon: UsersIcon, soon: true },
   { label: 'Email Sequences', icon: MailIcon, soon: true },
   { label: 'Job List', icon: BriefcaseIcon, navigate: 'job-listings' },
 ];
+
 
 const accountNav = [
   { label: 'Profile', icon: UserIcon, soon: true },
@@ -210,6 +210,8 @@ function SidebarContent({ active, setActive, onNavigate, onRequestLeave }) {
     if (item?.navigate === 'hr') goToHR();
     if (item?.navigate === 'job-listings') goToJobListings();
   };
+
+
 
   return (
     <div className="flex h-full w-full flex-col bg-[#344e41] py-6">
@@ -281,9 +283,14 @@ function Navbar() {
   const { goToHR } = useNavigation();
 
   useEffect(() => {
-    if (location.pathname.startsWith('/workspace/jobs')) setActive('Job List');
-    else if (location.pathname.startsWith('/workspace')) setActive('Dashboards');
+    if (location.pathname.startsWith('/workspace/jobs') || location.pathname.includes('/forms')) {
+      setActive('Job List');
+    } else if (location.pathname.startsWith('/workspace')) {
+      setActive('Dashboards');
+    }
   }, [location.pathname]);
+
+
 
   const requestLeave = () => {
     setOpen(false);

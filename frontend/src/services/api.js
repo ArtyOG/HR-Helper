@@ -150,3 +150,25 @@ export function rescoreSubmission(formId, submissionId) {
     method: 'POST',
   });
 }
+
+export function listInterviewSlots(formId) {
+  return request(`/forms/${formId}/interview-slots`);
+}
+
+export function createInterviewSlots(formId, slots) {
+  return request(`/forms/${formId}/interview-slots`, {
+    method: 'POST',
+    body: { slots },
+  });
+}
+
+export function listAvailableInterviewSlots(formId) {
+  return request(`/forms/${formId}/interview-slots/available`);
+}
+
+export function bookInterviewSlot(submissionId, slotId) {
+  return request(`/submissions/${submissionId}/interview-slot`, {
+    method: 'POST',
+    body: { slotId },
+  });
+}

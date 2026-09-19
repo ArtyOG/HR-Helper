@@ -20,12 +20,16 @@ export function NavigationProvider({ children }) {
       goToEditForm: (formId) => navigate(`/hr/forms/${formId}/edit`),
       goToFormView: (formId) => navigate(`/hr/forms/${formId}`),
       goToSubmissions: (formId) => navigate(`/hr/forms/${formId}/submissions`),
+      goToInterviews: (formId) => navigate(`/hr/forms/${formId}/interviews`),
       goToCreateFormWs: (template) => navigate('/workspace/forms/new', { state: { template } }),
       goToEditFormWs: (formId) => navigate(`/workspace/forms/${formId}/edit`),
       goToFormViewWs: (formId) => navigate(`/workspace/forms/${formId}`),
       goToSubmissionsWs: (formId) => navigate(`/workspace/forms/${formId}/submissions`),
+      goToInterviewsWs: (formId) => navigate(`/workspace/forms/${formId}/interviews`),
     }),
     [navigate, location]
+
+
   );
 
   return <NavigationContext.Provider value={value}>{children}</NavigationContext.Provider>;
