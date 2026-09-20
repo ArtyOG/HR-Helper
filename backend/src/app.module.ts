@@ -19,6 +19,7 @@ import { EmailModule } from './modules/email/email.module';
     FormSubmissionsModule,
     InterviewSlotsModule,
     AiModule,
+    EmailModule,
     ConfigModule.forRoot({ isGlobal: true }),
   ],
   controllers: [HealthController],
