@@ -44,6 +44,18 @@ footer[id] {
   }
 }
 
+@keyframes toast-in-right {
+  from {
+    opacity: 0;
+    transform: translateY(16px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+
 .popup {
   --burger-line-width: 1.125em;
   --burger-line-height: 0.125em;

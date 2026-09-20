@@ -117,6 +117,7 @@ const mainNav = [
   { label: 'Job List', icon: BriefcaseIcon, navigate: 'job-listings' },
 ];
 
+
 const accountNav = [
   { label: 'Billing', icon: CardIcon, soon: true },
   { label: 'Integration', icon: SettingsIcon, soon: true },
@@ -184,6 +185,8 @@ function SidebarContent({ active, setActive, onNavigate, onRequestLeave }) {
     if (item?.navigate === 'email-sequences') goToEmailSequencesWs();
     if (item?.navigate === 'interview-slots') goToInterviewSlotsWs();
   };
+
+
 
   return (
     <div className="flex h-full w-full flex-col bg-[#344e41] py-6">
@@ -255,11 +258,18 @@ function Navbar() {
   const { goToHR } = useNavigation();
 
   useEffect(() => {
-    if (location.pathname.startsWith('/workspace/jobs')) setActive('Job List');
-    else if (location.pathname.startsWith('/workspace/email-sequences')) setActive('Email Sequences');
-    else if (location.pathname.startsWith('/workspace/interview-slots')) setActive('Candidates Interview');
-    else if (location.pathname.startsWith('/workspace/dashboard')) setActive('Dashboards');
+    if (location.pathname.startsWith('/workspace/jobs') || location.pathname.includes('/forms')) {
+      setActive('Job List');
+    } else if (location.pathname.startsWith('/workspace/email-sequences')) {
+      setActive('Email Sequences');
+    } else if (location.pathname.startsWith('/workspace/interview-slots')) {
+      setActive('Candidates Interview');
+    } else if (location.pathname.startsWith('/workspace/dashboard') || location.pathname === '/workspace') {
+      setActive('Dashboards');
+    }
   }, [location.pathname]);
+
+
 
   const requestLeave = () => {
     setOpen(false);

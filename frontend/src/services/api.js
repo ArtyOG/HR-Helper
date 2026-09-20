@@ -5,6 +5,12 @@ export function googleAuthUrl() {
   return `${API_URL}/auth/google`;
 }
 
+export async function getApiHealth() {
+  const response = await fetch(`${API_URL}${API_PREFIX}/health`);
+  if (!response.ok) throw new Error('API health request failed');
+  return response.json();
+}
+
 async function request(path, { method = 'GET', body } = {}) {
   const headers = { 'Content-Type': 'application/json' };
 
@@ -174,6 +180,18 @@ export function bookInterviewSlot(submissionId, slotId) {
   return request(`/submissions/${submissionId}/interview-slot`, {
     method: 'POST',
     body: { slotId },
+  });
+}
+
+export function deleteInterviewSlot(formId, slotId) {
+  return request(`/forms/${formId}/interview-slots/${slotId}`, {
+    method: 'DELETE',
+  });
+}
+
+export function clearInterviewSlots(formId) {
+  return request(`/forms/${formId}/interview-slots`, {
+    method: 'DELETE',
   });
 }
 

@@ -7,7 +7,8 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CreateInterviewSlotsDto } from './dto/create-interview-slot.dto';
-import { InterviewSlotStatus } from '@prisma/client';
+import { FilterInterviewSlotsDto } from './dto/filter-interview-slots.dto';
+import { InterviewSlotStatus, Prisma } from '@prisma/client';
 
 @Injectable()
 export class InterviewSlotsService {
@@ -78,6 +79,56 @@ export class InterviewSlotsService {
         },
       },
       orderBy: { startTime: 'asc' },
+    });
+  }
+
+  /**
+   * HR: Get all interview slots for authenticated user across forms (with optional status, formId, upcoming, limit)
+   */
+  async findAll(userId: number, filters?: FilterInterviewSlotsDto) {
+    const where: Prisma.InterviewSlotWhereInput = {
+      form: {
+        userId,
+      },
+    };
+
+    if (filters?.status) {
+      where.status = filters.status;
+    }
+
+    if (filters?.formId) {
+      where.formId = filters.formId;
+    }
+
+    if (filters?.upcoming) {
+      where.endTime = { gte: new Date() };
+    }
+
+    return this.prisma.interviewSlot.findMany({
+      where,
+      include: {
+        form: {
+          select: {
+            id: true,
+            title: true,
+          },
+        },
+        submission: {
+          select: {
+            id: true,
+            email: true,
+            status: true,
+            cvEvaluation: {
+              select: {
+                score: true,
+                status: true,
+              },
+            },
+          },
+        },
+      },
+      orderBy: { startTime: 'asc' },
+      ...(filters?.limit ? { take: filters.limit } : {}),
     });
   }
 
@@ -173,5 +224,55 @@ export class InterviewSlotsService {
     }
 
     return slot;
+  }
+
+  /**
+   * HR: Delete an individual unbooked interview slot
+   */
+  async deleteSlot(formId: string, slotId: number, userId: number) {
+    const form = await this.prisma.form.findUnique({ where: { id: formId } });
+    if (!form) {
+      throw new NotFoundException('Form not found');
+    }
+    if (form.userId !== userId) {
+      throw new ForbiddenException('You do not have permission to manage timeslots for this form');
+    }
+
+    const slot = await this.prisma.interviewSlot.findUnique({
+      where: { id: slotId },
+    });
+
+    if (!slot || slot.formId !== formId) {
+      throw new NotFoundException('Interview slot not found');
+    }
+
+    if (slot.status === InterviewSlotStatus.BOOKED || slot.submissionId) {
+      throw new BadRequestException('Cannot delete a booked interview slot');
+    }
+
+    return this.prisma.interviewSlot.delete({
+      where: { id: slotId },
+    });
+  }
+
+  /**
+   * HR: Clear all unbooked interview slots for a form
+   */
+  async clearSlots(formId: string, userId: number) {
+    const form = await this.prisma.form.findUnique({ where: { id: formId } });
+    if (!form) {
+      throw new NotFoundException('Form not found');
+    }
+    if (form.userId !== userId) {
+      throw new ForbiddenException('You do not have permission to manage timeslots for this form');
+    }
+
+    return this.prisma.interviewSlot.deleteMany({
+      where: {
+        formId,
+        status: { not: InterviewSlotStatus.BOOKED },
+        submissionId: null,
+      },
+    });
   }
 }

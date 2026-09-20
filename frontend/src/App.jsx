@@ -13,10 +13,14 @@ import FormView from './pages/FormView';
 import ApplyForm from './pages/ApplyForm';
 import SlotBooking from './pages/SlotBooking';
 import SubmissionsView from './pages/SubmissionsView';
+import InterviewScheduling from './pages/InterviewScheduling';
 import WorkspaceShell from './components/workspace/WorkspaceShell';
+import CandidateSchedule from './pages/CandidateSchedule';
 import EmailSequences from './pages/EmailSequences';
 import InterviewSlots from './pages/InterviewSlots';
+import { Toaster } from 'sonner';
 
+// Live hot-reload verified with polling
 function RequireAuth({ children }) {
   const { user, loading, authError } = useAuth();
 
@@ -30,7 +34,7 @@ function RequireAuth({ children }) {
           <button
             type="button"
             onClick={() => window.location.reload()}
-            className="mt-5 rounded-full bg-plum px-6 py-2.5 text-sm font-semibold text-white transition hover:bg-plum-dark"
+            className="mt-4 inline-flex items-center justify-center rounded-xl bg-plum px-4 py-2 text-sm font-medium text-white transition hover:bg-plum/90"
           >
             Retry
           </button>
@@ -38,7 +42,10 @@ function RequireAuth({ children }) {
       </div>
     );
   }
-  if (!user) return <Navigate to="/login" replace />;
+  if (!user) {
+    return <Navigate to="/login" replace />;
+  }
+
   return children;
 }
 
@@ -67,7 +74,7 @@ function App() {
           <Route path="/" element={<RootRoute />} />
           <Route path="/login" element={<Authentication />} />
           <Route path="/apply/:formId" element={<ApplyForm />} />
-          <Route path="/schedule/:formId/:submissionId" element={<SlotBooking />} />
+          <Route path="/schedule/:formId/:submissionId" element={<CandidateSchedule />} />
           <Route
             path="/home"
             element={
@@ -78,6 +85,15 @@ function App() {
           />
           <Route path="/hr" element={<Navigate to="/home" replace />} />
           <Route path="/hr/forms/*" element={<RedirectToWorkspaceForm />} />
+          <Route
+            path="/hr/forms/:formId/interviews"
+            element={
+              <RequireAuth>
+                <InterviewScheduling />
+              </RequireAuth>
+            }
+          />
+
           <Route
             path="/workspace"
             element={
@@ -95,6 +111,7 @@ function App() {
             <Route path="forms/:formId/edit" element={<EditForm />} />
             <Route path="forms/:formId" element={<FormView />} />
             <Route path="forms/:formId/submissions" element={<SubmissionsView />} />
+            <Route path="forms/:formId/interviews" element={<InterviewScheduling />} />
           </Route>
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
@@ -103,6 +120,7 @@ function App() {
             <Route path="/login" element={<AuthModal />} />
           </Routes>
         )}
+        <Toaster position="bottom-right" richColors closeButton />
       </NavigationProvider>
     </AuthProvider>
   );

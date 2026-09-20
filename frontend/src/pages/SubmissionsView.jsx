@@ -252,8 +252,9 @@ function SubmissionsView() {
   const location = useLocation();
   const inviteMode = location.pathname.startsWith('/workspace');
   const backTo = useFormsBackNav();
-  const { goToEmailSequencesWs } = useNavigation();
+  const { goToInterviews, goToInterviewsWs, goToEmailSequencesWs } = useNavigation();
   const [form, setForm] = useState(null);
+
   const [submissions, setSubmissions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -583,8 +584,20 @@ function SubmissionsView() {
                     {STATUS_META[s].label}: {counts[s] ?? 0}
                   </span>
                 ))}
+                <button
+                  type="button"
+                  onClick={() =>
+                    location.pathname.startsWith('/workspace')
+                      ? goToInterviewsWs(formId)
+                      : goToInterviews(formId)
+                  }
+                  className="rounded-full border border-plum/20 bg-white px-3.5 py-1 text-[11px] font-bold text-plum shadow-sm transition hover:bg-plum hover:text-white"
+                >
+                  Interview Slots &rarr;
+                </button>
               </div>
             </div>
+
 
             {selectedIds.length > 0 && (
               <div className="mt-5 flex flex-wrap items-center gap-3 rounded-[18px] bg-plum px-4 py-3 text-white">

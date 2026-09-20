@@ -38,4 +38,5 @@
 
 ## Active Roadmaps & Checklists
 - **Backend Refactoring & Technical Debt**: Always consult [`backend/CHECKLIST.md`](backend/CHECKLIST.md) before making structural changes to submissions, CV handling, or AI evaluation. When an agent completes an item or section in the checklist, remove it from the checklist file.
+- **Frontend Refactoring & Features**: Always consult [`frontend/CHECKLIST.md`](frontend/CHECKLIST.md) before making structural changes to frontend features, interview scheduling, or API integrations. When an agent completes an item or section in the checklist, remove it from the checklist file.
 
