@@ -8,14 +8,14 @@ async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   app.use(cookieParser());
   const frontendUrl = process.env.FRONTEND_URL?.replace(/\/+$/, '');
+  const allowedOrigins: (string | RegExp)[] = [
+    'http://localhost:5173',
+    'http://localhost:3000',
+    /\.vercel\.app$/,
+    ...(frontendUrl ? [frontendUrl] : []),
+  ];
   app.enableCors({
-    origin: (origin, callback) => {
-      if (!origin || !frontendUrl || origin === frontendUrl || origin.endsWith('.vercel.app') || origin.startsWith('http://localhost:')) {
-        callback(null, true);
-      } else {
-        callback(null, true);
-      }
-    },
+    origin: allowedOrigins,
     credentials: true,
   });
   app.setGlobalPrefix("api", {
