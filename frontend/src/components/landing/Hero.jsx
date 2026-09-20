@@ -50,6 +50,8 @@ function Hero() {
             <img
               src={heroImage}
               alt="HiOring AI resume screening and ranking dashboard"
+              loading="eager"
+              decoding="async"
               className="relative w-full rounded-[2rem] border border-plum/10 object-cover shadow-2xl shadow-plum/20"
             />
           </div>
