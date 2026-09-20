@@ -8,10 +8,8 @@ async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   app.use(cookieParser());
   const frontendUrl = process.env.FRONTEND_URL?.replace(/\/+$/, '');
-  const allowedOrigins: (string | RegExp)[] = [
+  const allowedOrigins: string[] = [
     'http://localhost:5173',
-    'http://localhost:3000',
-    /\.vercel\.app$/,
     ...(frontendUrl ? [frontendUrl] : []),
   ];
   app.enableCors({
