@@ -7,14 +7,12 @@ import { AuthService } from './auth.service';
 @Injectable()
 export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
     constructor(private authService: AuthService) {
-        const clientID = process.env.GOOGLE_CLIENT_ID;
-        const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
+        const clientID = process.env.GOOGLE_CLIENT_ID || 'placeholder-google-client-id.apps.googleusercontent.com';
+        const clientSecret = process.env.GOOGLE_CLIENT_SECRET || 'placeholder-google-client-secret';
         const callbackURL = process.env.GOOGLE_CALLBACK_URL || 'http://localhost:3000/auth/google/callback';
 
-        if (!clientID || !clientSecret) {
-            throw new InternalServerErrorException(
-                'Google Client ID and Client Secret must be defined in your .env file!'
-            );
+        if (!process.env.GOOGLE_CLIENT_ID || !process.env.GOOGLE_CLIENT_SECRET) {
+            console.warn('[GoogleStrategy] GOOGLE_CLIENT_ID or GOOGLE_CLIENT_SECRET is not configured. Google OAuth login will be inactive until configured in environment.');
         }
 
         super({
