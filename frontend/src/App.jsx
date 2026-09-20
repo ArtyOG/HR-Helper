@@ -14,6 +14,7 @@ import ApplyForm from './pages/ApplyForm';
 import SubmissionsView from './pages/SubmissionsView';
 import InterviewScheduling from './pages/InterviewScheduling';
 import WorkspaceShell from './components/workspace/WorkspaceShell';
+import CandidateSchedule from './pages/CandidateSchedule';
 import { Toaster } from 'sonner';
 
 
@@ -55,6 +56,7 @@ function App() {
           <Route path="/" element={<LandingPage />} />
           <Route path="/login" element={<Authentication />} />
           <Route path="/apply/:formId" element={<ApplyForm />} />
+          <Route path="/schedule/:formId/:submissionId" element={<CandidateSchedule />} />
           <Route
             path="/home"
             element={

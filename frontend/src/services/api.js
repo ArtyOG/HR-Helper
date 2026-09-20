@@ -184,4 +184,9 @@ export function clearInterviewSlots(formId) {
     method: 'DELETE',
   });
 }
+
+export function getInterviewBooking(submissionId) {
+  return request(`/submissions/${submissionId}/interview-slot`);
+}
+
 
