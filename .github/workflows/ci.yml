@@ -45,7 +45,7 @@ jobs:
         run: npm run build
 
       - name: Run backend unit tests
-        run: npm test
+        run: npm test -- --runInBand
 
       - name: Security audit dependencies
         run: npm audit --audit-level=high

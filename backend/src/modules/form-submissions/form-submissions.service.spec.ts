@@ -24,6 +24,9 @@ describe('FormSubmissionsService', () => {
       updateMany: jest.Mock;
       delete: jest.Mock;
     };
+    file: {
+      findUnique: jest.Mock;
+    };
     form: {
       findUnique: jest.Mock;
     };
@@ -48,6 +51,9 @@ describe('FormSubmissionsService', () => {
         update: jest.fn(),
         updateMany: jest.fn(),
         delete: jest.fn(),
+      },
+      file: {
+        findUnique: jest.fn().mockResolvedValue({ id: 101, key: 'file-key' }),
       },
       form: {
         findUnique: jest.fn(),
@@ -165,12 +171,25 @@ describe('FormSubmissionsService', () => {
           formId: 'uuid-123',
           email: 'candidate@example.com',
           cvFileId: 101,
+          cvEvaluation: {
+            create: {
+              fileId: 101,
+            },
+          },
           answers: {
             create: [
               { fieldId: 1, value: 'Jane Doe', optionId: undefined },
               { fieldId: 2, value: undefined, optionId: 5 },
             ],
           },
+        },
+        include: {
+          cvEvaluation: {
+            include: {
+              file: true,
+            },
+          },
+          answers: true,
         },
       });
       expect(result).toEqual(mockCreatedSubmission);
@@ -227,7 +246,14 @@ describe('FormSubmissionsService', () => {
       expect(prisma.formSubmission.update).toHaveBeenCalledWith({
         where: { id: 'sub-uuid-101' },
         data: { status: SubmissionStatus.APPROVED },
-        include: { cvFile: true, answers: true },
+        include: {
+          cvEvaluation: {
+            include: {
+              file: true,
+            },
+          },
+          answers: true,
+        },
       });
       expect(result.status).toEqual(SubmissionStatus.APPROVED);
     });

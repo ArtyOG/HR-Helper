@@ -10,6 +10,8 @@ describe('AiService', () => {
   let prisma: {
     formSubmission: {
       findUnique: jest.Mock;
+    };
+    cvEvaluation: {
       update: jest.Mock;
       findMany: jest.Mock;
     };
@@ -28,6 +30,8 @@ describe('AiService', () => {
     prisma = {
       formSubmission: {
         findUnique: jest.fn(),
+      },
+      cvEvaluation: {
         update: jest.fn(),
         findMany: jest.fn().mockResolvedValue([]),
       },
@@ -101,18 +105,20 @@ describe('AiService', () => {
     it('should skip scoring if form has no requirements', async () => {
       prisma.formSubmission.findUnique.mockResolvedValue({
         id: 'sub-uuid-1',
-        cvFile: { key: 'documents/resume.pdf' },
+        cvEvaluation: {
+          file: { key: 'documents/resume.pdf' },
+        },
         form: { requirements: '' },
       });
 
       await service.processSubmission('sub-uuid-1');
 
-      expect(prisma.formSubmission.update).toHaveBeenCalledWith(
+      expect(prisma.cvEvaluation.update).toHaveBeenCalledWith(
         expect.objectContaining({
-          where: { id: 'sub-uuid-1' },
+          where: { submissionId: 'sub-uuid-1' },
           data: expect.objectContaining({
-            aiScoreStatus: 'SKIPPED',
-            aiError: 'Form has no job requirements specified',
+            status: 'SKIPPED',
+            error: 'Form has no job requirements specified',
           }),
         }),
       );
@@ -121,18 +127,18 @@ describe('AiService', () => {
     it('should mark scoring as FAILED if submission has no cvFile', async () => {
       prisma.formSubmission.findUnique.mockResolvedValue({
         id: 'sub-uuid-1',
-        cvFile: null,
+        cvEvaluation: null,
         form: { requirements: 'Skill A' },
       });
 
       await service.processSubmission('sub-uuid-1');
 
-      expect(prisma.formSubmission.update).toHaveBeenCalledWith(
+      expect(prisma.cvEvaluation.update).toHaveBeenCalledWith(
         expect.objectContaining({
-          where: { id: 'sub-uuid-1' },
+          where: { submissionId: 'sub-uuid-1' },
           data: expect.objectContaining({
-            aiScoreStatus: 'FAILED',
-            aiError: 'CV file record not found in storage',
+            status: 'FAILED',
+            error: 'CV file record not found in storage',
           }),
         }),
       );
@@ -141,7 +147,9 @@ describe('AiService', () => {
     it('should successfully score CV and update status to COMPLETED', async () => {
       prisma.formSubmission.findUnique.mockResolvedValue({
         id: 'sub-uuid-1',
-        cvFile: { key: 'documents/resume.pdf' },
+        cvEvaluation: {
+          file: { key: 'documents/resume.pdf' },
+        },
         form: { requirements: 'Must know TypeScript and NestJS' },
       });
 
@@ -156,12 +164,12 @@ describe('AiService', () => {
       await service.processSubmission('sub-uuid-1');
 
       expect(s3Service.getPresignedDownloadUrl).toHaveBeenCalledWith('documents/resume.pdf', 900);
-      expect(prisma.formSubmission.update).toHaveBeenCalledWith({
-        where: { id: 'sub-uuid-1' },
+      expect(prisma.cvEvaluation.update).toHaveBeenCalledWith({
+        where: { submissionId: 'sub-uuid-1' },
         data: {
-          cvScore: 85,
-          aiScoreStatus: 'COMPLETED',
-          aiError: null,
+          score: 85,
+          status: 'COMPLETED',
+          error: null,
         },
       });
     });
