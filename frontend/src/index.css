@@ -55,6 +55,45 @@ footer[id] {
   }
 }
 
+@keyframes shimmer {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+.animate-shimmer {
+  animation: shimmer 1.6s infinite ease-in-out;
+}
+
+@keyframes bar-wave {
+  0%, 100% {
+    transform: scaleX(0.72);
+    opacity: 0.65;
+  }
+  50% {
+    transform: scaleX(1.18);
+    opacity: 1;
+  }
+}
+
+.animate-bar-1 {
+  transform-origin: 10px center;
+  animation: bar-wave 1.6s ease-in-out infinite 0s;
+}
+
+.animate-bar-2 {
+  transform-origin: 10px center;
+  animation: bar-wave 1.6s ease-in-out infinite 0.22s;
+}
+
+.animate-bar-3 {
+  transform-origin: 10px center;
+  animation: bar-wave 1.6s ease-in-out infinite 0.44s;
+}
+
 
 .popup {
   --burger-line-width: 1.125em;

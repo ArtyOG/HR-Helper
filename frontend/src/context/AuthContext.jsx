@@ -1,12 +1,15 @@
 import { createContext, useContext, useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { checkAuth, logout as apiLogout } from '../services/api';
 
 const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
+  const navigate = useNavigate();
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [authError, setAuthError] = useState(null);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
 
   useEffect(() => {
     const onUnauthorized = () => {
@@ -48,17 +51,22 @@ export function AuthProvider({ children }) {
   }, []);
 
   const logout = async () => {
+    setIsLoggingOut(true);
     try {
       await apiLogout();
     } catch {
       // ignore network errors on logout
     }
     localStorage.removeItem('HiOringToken');
+    navigate('/', { replace: true });
     setUser(null);
     setAuthError(null);
+    setTimeout(() => {
+      setIsLoggingOut(false);
+    }, 500);
   };
 
-  const value = { user, loading, authError, logout };
+  const value = { user, loading, authError, isLoggingOut, logout };
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 

@@ -42,10 +42,7 @@ function Hero() {
       <div className="mx-auto max-w-site px-6 lg:px-8">
         <div className="grid items-center gap-12 lg:grid-cols-[1.1fr_0.9fr]">
           <div className="flex flex-col items-start gap-5">
-            <span className="inline-flex items-center rounded-full bg-plum px-5 py-2 text-xs font-semibold uppercase tracking-wide text-white">
-              Hiring
-            </span>
-            <h1 className="mt-6 font-sans text-6xl font-bold leading-[1.05] tracking-tight text-plum sm:text-6xl lg:text-7xl">
+            <h1 className="font-sans text-6xl font-bold leading-[1.05] tracking-tight text-plum sm:text-6xl lg:text-7xl">
               Every hiring <span className="text-[#588157]">form</span>,
               <br />
               in one place.

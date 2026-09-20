@@ -4,9 +4,159 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>HiORing</title>
+    <style>
+      body {
+        margin: 0;
+        background-color: #F2F0E8;
+        font-family: Inter, system-ui, -apple-system, sans-serif;
+      }
+      #initial-loader {
+        position: fixed;
+        inset: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background-color: #F2F0E8;
+        padding: 16px;
+        overflow: hidden;
+        z-index: 99999;
+      }
+      .loader-ambient {
+        position: absolute;
+        width: 280px;
+        height: 280px;
+        border-radius: 9999px;
+        background: radial-gradient(circle, rgba(49, 74, 61, 0.12) 0%, rgba(88, 129, 87, 0.15) 50%, rgba(244, 187, 45, 0.12) 100%);
+        filter: blur(48px);
+        pointer-events: none;
+      }
+      .loader-card {
+        position: relative;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        width: 100%;
+        max-width: 300px;
+        background: rgba(255, 255, 255, 0.90);
+        border: 1px solid rgba(49, 74, 61, 0.10);
+        box-shadow: 0 20px 25px -5px rgba(49, 74, 61, 0.06), 0 8px 10px -6px rgba(49, 74, 61, 0.04);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        border-radius: 24px;
+        padding: 32px 24px;
+      }
+      .loader-bars-wrapper {
+        position: relative;
+        margin-bottom: 20px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .loader-bars-svg {
+        height: 48px;
+        width: auto;
+      }
+      .bar-1 {
+        transform-origin: 12px center;
+        animation: bar-wave 1.6s ease-in-out infinite 0s;
+      }
+      .bar-2 {
+        transform-origin: 12px center;
+        animation: bar-wave 1.6s ease-in-out infinite 0.22s;
+      }
+      .bar-3 {
+        transform-origin: 12px center;
+        animation: bar-wave 1.6s ease-in-out infinite 0.44s;
+      }
+      .loader-title {
+        color: #314a3d;
+        font-size: 20px;
+        font-weight: 700;
+        letter-spacing: -0.02em;
+        margin: 0;
+      }
+      .loader-subtext {
+        color: #78716c;
+        font-size: 12px;
+        font-weight: 500;
+        margin: 6px 0 0 0;
+        min-height: 18px;
+        transition: opacity 0.2s ease-out, transform 0.2s ease-out;
+      }
+      .loader-track {
+        margin-top: 20px;
+        width: 150px;
+        height: 4px;
+        border-radius: 9999px;
+        background: rgba(49, 74, 61, 0.1);
+        overflow: hidden;
+        position: relative;
+      }
+      .loader-shimmer {
+        width: 100%;
+        height: 100%;
+        border-radius: 9999px;
+        background: linear-gradient(90deg, transparent, #2d4c3a, transparent);
+        animation: beam-shimmer 1.6s infinite ease-in-out;
+      }
+      @keyframes bar-wave {
+        0%, 100% { transform: scaleX(0.72); opacity: 0.65; }
+        50% { transform: scaleX(1.18); opacity: 1; }
+      }
+      @keyframes beam-shimmer {
+        0% { transform: translateX(-100%); }
+        100% { transform: translateX(100%); }
+      }
+    </style>
   </head>
   <body>
-    <div id="root"></div>
+    <div id="root">
+      <div id="initial-loader" aria-label="Loading HiORing">
+        <div class="loader-ambient" aria-hidden="true"></div>
+        <div class="loader-card">
+          <div class="loader-bars-wrapper">
+            <svg viewBox="0 0 160 110" class="loader-bars-svg" aria-hidden="true">
+              <rect class="bar-1" x="12" y="14" width="120" height="18" rx="9" fill="#2d4c3a" />
+              <rect class="bar-2" x="12" y="46" width="90" height="24" rx="12" fill="#f0b324" />
+              <rect class="bar-3" x="12" y="82" width="128" height="18" rx="9" fill="#1c7882" />
+            </svg>
+          </div>
+          <h2 class="loader-title">HiORing</h2>
+          <p id="loader-subtext" class="loader-subtext">Preparing your workspace...</p>
+          <div class="loader-track">
+            <div class="loader-shimmer"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <script>
+      (function() {
+        var phrases = [
+          "Preparing your workspace...",
+          "Connecting to HiORing...",
+          "Organizing hiring pipelines...",
+          "Almost ready..."
+        ];
+        var idx = 0;
+        var el = document.getElementById("loader-subtext");
+        if (el) {
+          var interval = setInterval(function() {
+            if (idx >= phrases.length - 1) {
+              clearInterval(interval);
+              return;
+            }
+            idx++;
+            el.style.opacity = '0';
+            el.style.transform = 'translateY(-2px)';
+            setTimeout(function() {
+              el.textContent = phrases[idx];
+              el.style.opacity = '1';
+              el.style.transform = 'translateY(0)';
+            }, 200);
+          }, 3000);
+        }
+      })();
+    </script>
     <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>

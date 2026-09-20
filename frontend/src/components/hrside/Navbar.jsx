@@ -35,7 +35,6 @@ function Navbar() {
   const handleLogout = async () => {
     setMenuOpen(false);
     await logout();
-    navigate('/');
   };
 
   useEffect(() => {
