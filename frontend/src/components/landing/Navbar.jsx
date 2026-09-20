@@ -1,27 +1,14 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { useNavigation } from '../../context/NavigationContext';
+import Logo from '../common/Logo';
 
 const links = [
   { label: 'Home', href: '#top' },
-  { label: 'Features', href: '#features' },
-  { label: 'How it works', href: '#how-it-works' },
   { label: 'About Us', href: '#about' },
+  { label: 'How it works', href: '#how-it-works' },
+  { label: 'Features', href: '#features' },
   { label: 'Support', href: '#support' },
 ];
-
-function Logo() {
-  return (
-    <a href="#top" className="flex items-center gap-3">
-      <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-gold font-sans text-2xl font-bold text-plum shadow-sm">
-        H
-      </span>
-      <span className="flex flex-col">
-        <span className="font-sans text-2xl font-bold leading-none text-plum">HiORing</span>
-        <span className="mt-1 h-[3px] w-10 rounded-full bg-teal" />
-      </span>
-    </a>
-  );
-}
 
 function Navbar() {
   const { goToLogin, goToSignup } = useNavigation();

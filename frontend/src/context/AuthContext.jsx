@@ -9,6 +9,15 @@ export function AuthProvider({ children }) {
   const [authError, setAuthError] = useState(null);
 
   useEffect(() => {
+    const onUnauthorized = () => {
+      setUser(null);
+      setAuthError('Your session has expired. Please sign in again.');
+    };
+    window.addEventListener('auth:unauthorized', onUnauthorized);
+    return () => window.removeEventListener('auth:unauthorized', onUnauthorized);
+  }, []);
+
+  useEffect(() => {
     let active = true;
     checkAuth()
       .then((data) => {

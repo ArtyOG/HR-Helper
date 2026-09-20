@@ -3,13 +3,11 @@ import { useNavigation } from '../../context/NavigationContext';
 import { listForms } from '../../services/api';
 import { getFormStatus, getNextStatusTime } from '../../utils/forms';
 import { useNow } from '../../hooks/useNow';
-import ConfirmModal from '../common/ConfirmModal';
 
 function Hero() {
-  const { goToWorkspace, goToLanding } = useNavigation();
+  const { goToWorkspace } = useNavigation();
   const [authHovered, setAuthHovered] = useState('trial');
   const [authPill, setAuthPill] = useState({ x: 0, w: 0, ready: false });
-  const [showConfirm, setShowConfirm] = useState(false);
   const [latestForm, setLatestForm] = useState(null);
   const trialRef = useRef(null);
   const viewRef = useRef(null);
@@ -41,24 +39,6 @@ function Hero() {
       <div className="mx-auto max-w-site px-6 lg:px-8">
         <div className="grid items-center gap-12 lg:grid-cols-[1.1fr_0.9fr]">
           <div className="flex flex-col items-start gap-5">
-            <button
-              type="button"
-              onClick={goToLanding}
-              className="group inline-flex items-center gap-2 rounded-full border border-plum/20 bg-white px-4 py-2 text-sm font-semibold text-plum shadow-sm transition-all duration-200 hover:border-plum hover:bg-plum hover:text-white"
-            >
-              <svg
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                className="h-4 w-4 transition-transform duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] group-hover:-translate-x-0.5"
-              >
-                <path d="M19 12H5M12 19l-7-7 7-7" />
-              </svg>
-              Back to Intro
-            </button>
             <span className="inline-flex items-center rounded-full bg-plum px-5 py-2 text-xs font-semibold uppercase tracking-wide text-white">
               Hiring
             </span>
@@ -105,7 +85,7 @@ function Hero() {
                   href="#view"
                   onClick={(e) => {
                     e.preventDefault();
-                    setShowConfirm(true);
+                    goToWorkspace();
                   }}
                   onMouseEnter={() => {
                     setAuthHovered('view');
@@ -176,17 +156,6 @@ function Hero() {
           </div>
         </div>
       </div>
-
-      <ConfirmModal
-        open={showConfirm}
-        onClose={() => setShowConfirm(false)}
-        onConfirm={() => {
-          setShowConfirm(false);
-          goToWorkspace();
-        }}
-        title="Enter Workspace"
-        message="Do you want to enter Workspace?"
-      />
     </section>
   );
 }

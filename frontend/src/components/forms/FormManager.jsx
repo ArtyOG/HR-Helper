@@ -332,7 +332,7 @@ function FormManager({ onCreate, onView, onEdit, onUnauthorized }) {
                       form={form}
                       now={now}
                       onView={() => onView?.(form.id)}
-                      onEdit={(form.submissionCount ?? 0) === 0 ? () => onEdit?.(form.id) : undefined}
+                      onEdit={() => onEdit?.(form.id)}
                       onDelete={() => setDeleteTarget(form)}
                       onDuplicate={() => handleDuplicate(form)}
                       onCopyLink={() => copyLink(form)}

@@ -34,6 +34,15 @@ export default {
       maxWidth: {
         site: '1200px',
       },
+      animation: {
+        'grow-in': 'growIn 0.45s cubic-bezier(0.22, 1, 0.36, 1) both',
+      },
+      keyframes: {
+        growIn: {
+          '0%': { opacity: '0', transform: 'scale(0.92) translateY(16px)' },
+          '100%': { opacity: '1', transform: 'scale(1) translateY(0)' },
+        },
+      },
     },
   },
   plugins: [],

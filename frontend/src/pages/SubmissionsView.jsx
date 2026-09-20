@@ -1,23 +1,24 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { useParams, useLocation } from 'react-router-dom';
+import { useLocation, useParams } from 'react-router-dom';
 import { useFormsBackNav } from '../hooks/useFormsBackNav';
 import { useNavigation } from '../context/NavigationContext';
-
 import Checkbox from '../components/common/Checkbox';
 import {
   getForm,
   listSubmissions,
   getSubmission,
   deleteSubmission,
-  updateSubmissionStatus,
-  bulkUpdateSubmissionStatus,
   rescoreSubmission,
+  getFileDownloadUrl,
 } from '../services/api';
+import { getApplicantName } from '../utils/applicantName';
+import StatusBadge from '../components/common/StatusBadge';
+import ScoreBar from '../components/common/ScoreBar';
 
 const STATUS_META = {
-  PENDING: { label: 'Pending', className: 'bg-gold text-plum', dot: 'bg-plum' },
-  APPROVED: { label: 'Approved', className: 'bg-[#a7eda7] text-[#0d6921]', dot: 'bg-[#0d6921]' },
-  REJECTED: { label: 'Rejected', className: 'bg-red-100 text-red-700', dot: 'bg-red-600' },
+  PENDING: { label: 'Pending' },
+  APPROVED: { label: 'Approved' },
+  REJECTED: { label: 'Rejected' },
 };
 
 const AI_TERMINAL_STATES = ['COMPLETED', 'FAILED', 'SKIPPED'];
@@ -34,30 +35,6 @@ const formatDate = (value) => {
     day: 'numeric',
   });
 };
-
-function StatusBadge({ status }) {
-  const meta = STATUS_META[status] ?? STATUS_META.PENDING;
-  return (
-    <span className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-[11px] font-semibold ${meta.className}`}>
-      <span className={`h-1.5 w-1.5 rounded-full ${meta.dot}`} />
-      {meta.label}
-    </span>
-  );
-}
-
-function ScoreBar({ score }) {
-  const value = Math.min(Number(score) || 0, 100);
-  return (
-    <div className="flex items-center gap-2">
-      <div className="h-1.5 w-16 overflow-hidden rounded-full bg-plum/10">
-        <div className="h-full rounded-full bg-gold" style={{ width: `${value}%` }} />
-      </div>
-      <span className="text-xs font-bold text-[#344e41]">
-        {score != null ? `${score}/100` : '—'}
-      </span>
-    </div>
-  );
-}
 
 function ConfirmDeleteModal({ email, deleting, error, onCancel, onConfirm }) {
   const [confirmText, setConfirmText] = useState('');
@@ -115,6 +92,96 @@ function ConfirmDeleteModal({ email, deleting, error, onCancel, onConfirm }) {
   );
 }
 
+function ConfirmApproveModal({ count, invite = false, onCancel, onConfirm }) {
+  const action = invite ? 'Invite' : 'Approve';
+  return (
+    <div
+      className="fixed inset-0 z-[100] flex items-center justify-center bg-plum-dark/50 p-4 backdrop-blur-sm"
+      role="dialog"
+      aria-modal="true"
+      aria-label={`${action} candidates`}
+      onClick={onCancel}
+    >
+      <div
+        className="w-full max-w-sm rounded-[20px] bg-[#f2efe7] p-6 shadow-2xl ring-1 ring-plum/10"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <h3 className="font-sans text-xl font-bold text-plum">
+          {action} {count} candidate{count === 1 ? '' : 's'}?
+        </h3>
+        <p className="mt-2 text-sm text-stone-600">
+          You&rsquo;ll be taken to the Email Sequences page to set up interview time slots and send
+          the invitation. Candidates are only marked as Approved once their invitation email is
+          actually sent.
+        </p>
+        <p className="mt-4 rounded-xl bg-gold/30 px-3 py-2.5 text-sm font-bold text-plum">
+          Once an invitation email is sent, the decision cannot be undone.
+        </p>
+        <div className="mt-5 flex justify-end gap-2">
+          <button
+            type="button"
+            onClick={onCancel}
+            className="rounded-full border border-plum/30 px-4 py-2 text-sm font-semibold text-plum transition hover:bg-plum hover:text-white"
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            onClick={onConfirm}
+            className="rounded-full bg-[#588157] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#163726]"
+          >
+            Confirm & continue
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ConfirmRejectModal({ count, onCancel, onConfirm }) {
+  return (
+    <div
+      className="fixed inset-0 z-[100] flex items-center justify-center bg-plum-dark/50 p-4 backdrop-blur-sm"
+      role="dialog"
+      aria-modal="true"
+      aria-label="Reject candidates"
+      onClick={onCancel}
+    >
+      <div
+        className="w-full max-w-sm rounded-[20px] bg-[#f2efe7] p-6 shadow-2xl ring-1 ring-plum/10"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <h3 className="font-sans text-xl font-bold text-plum">
+          Reject {count} candidate{count === 1 ? '' : 's'}?
+        </h3>
+        <p className="mt-2 text-sm text-stone-600">
+          You&rsquo;ll be taken to the Email Sequences page to send each candidate a rejection
+          email. Candidates are only marked as Rejected once their rejection email is actually sent.
+        </p>
+        <p className="mt-4 rounded-xl bg-red-100 px-3 py-2.5 text-sm font-bold text-red-700">
+          Once a rejection email is sent, the decision cannot be undone.
+        </p>
+        <div className="mt-5 flex justify-end gap-2">
+          <button
+            type="button"
+            onClick={onCancel}
+            className="rounded-full border border-plum/30 px-4 py-2 text-sm font-semibold text-plum transition hover:bg-plum hover:text-white"
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            onClick={onConfirm}
+            className="rounded-full bg-red-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-red-700"
+          >
+            Confirm & continue
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function DetailModal({ detail, onClose }) {
   const answers = detail?.answers ?? [];
   return (
@@ -132,7 +199,7 @@ function DetailModal({ detail, onClose }) {
         <div className="flex items-start justify-between gap-4">
           <div className="min-w-0">
             <h3 className="text-xl font-bold text-plum">Application detail</h3>
-            <p className="mt-1 text-sm text-stone-500">{detail?.email}</p>
+            <p className="mt-1 text-sm text-stone-500">{detail ? getApplicantName(detail, detail.form) : ''}</p>
           </div>
           <button
             type="button"
@@ -183,21 +250,24 @@ function DetailModal({ detail, onClose }) {
 function SubmissionsView() {
   const { formId } = useParams();
   const location = useLocation();
+  const inviteMode = location.pathname.startsWith('/workspace');
   const backTo = useFormsBackNav();
-  const { goToInterviews, goToInterviewsWs } = useNavigation();
+  const { goToInterviews, goToInterviewsWs, goToEmailSequencesWs } = useNavigation();
   const [form, setForm] = useState(null);
 
   const [submissions, setSubmissions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [selected, setSelected] = useState(new Set());
-  const [busy, setBusy] = useState(false);
+  const [approveTarget, setApproveTarget] = useState(null);
+  const [rejectTarget, setRejectTarget] = useState(null);
   const [detail, setDetail] = useState(null);
   const [detailLoading, setDetailLoading] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [deleteError, setDeleteError] = useState(null);
   const [deleting, setDeleting] = useState(false);
   const [rescoring, setRescoring] = useState(false);
+  const [cvBusyId, setCvBusyId] = useState(null);
   const [rescoreNote, setRescoreNote] = useState(null);
   const [rescoreTimedOut, setRescoreTimedOut] = useState(false);
   const rescoreTimerRef = useRef(null);
@@ -237,7 +307,15 @@ function SubmissionsView() {
     return stats;
   }, [submissions]);
 
+  const pendingSubmissions = useMemo(
+    () => submissions.filter((s) => s.status === 'PENDING'),
+    [submissions]
+  );
+  const pendingIds = pendingSubmissions.map((s) => s.id);
+
   const toggleSelect = (id) => {
+    const submission = submissions.find((s) => s.id === id);
+    if (!submission || submission.status !== 'PENDING') return;
     setSelected((prev) => {
       const next = new Set(prev);
       if (next.has(id)) next.delete(id);
@@ -247,9 +325,11 @@ function SubmissionsView() {
   };
 
   const toggleSelectAll = () => {
-    setSelected((prev) =>
-      prev.size === submissions.length ? new Set() : new Set(submissions.map((s) => s.id))
-    );
+    setSelected((prev) => {
+      const allPendingSelected =
+        pendingIds.length > 0 && pendingIds.every((id) => prev.has(id));
+      return allPendingSelected ? new Set() : new Set(pendingIds);
+    });
   };
 
   const openDetail = async (id) => {
@@ -267,26 +347,63 @@ function SubmissionsView() {
     }
   };
 
-  const changeStatus = async (ids, status) => {
-    if (!formId || busy || ids.length === 0) return;
-    setBusy(true);
+  const openCv = async (submission) => {
+    const fileId = submission.cvEvaluation?.file?.id;
+    if (!fileId || cvBusyId) return;
+    const win = window.open('', '_blank');
+    if (!win) {
+      setError('Your browser blocked the CV window. Allow pop-ups and try again.');
+      return;
+    }
+    try {
+      win.document.title = 'Loading CV…';
+    } catch {
+      // ignore if the window is not same-origin yet
+    }
+    setCvBusyId(submission.id);
     setError(null);
     try {
-      if (ids.length === 1) {
-        await updateSubmissionStatus(formId, ids[0], status);
-      } else {
-        await bulkUpdateSubmissionStatus(formId, ids, status);
-      }
-      setSubmissions((prev) =>
-        prev.map((s) => (ids.includes(s.id) ? { ...s, status } : s))
-      );
-      if (detail && ids.includes(detail.id)) setDetail({ ...detail, status });
-      setSelected(new Set());
+      const data = await getFileDownloadUrl(fileId);
+      const url = data?.url;
+      if (!url) throw new Error('CV download link is unavailable.');
+      win.location.href = url;
     } catch (err) {
-      setError(err.message || 'Failed to update status.');
+      win.close();
+      setError(err.message || 'Failed to open the CV.');
     } finally {
-      setBusy(false);
+      setCvBusyId(null);
     }
+  };
+
+  const confirmApprove = () => {
+    if (!approveTarget || approveTarget.length === 0) return;
+    const targets = approveTarget;
+    setApproveTarget(null);
+    goToEmailSequencesWs({
+      candidates: targets.map((s) => ({
+        email: s.email,
+        submissionId: s.id,
+        formId,
+        jobTitle: form?.title ?? null,
+        status: s.status,
+      })),
+    });
+  };
+
+  const confirmReject = () => {
+    if (!rejectTarget || rejectTarget.length === 0) return;
+    const targets = rejectTarget;
+    setRejectTarget(null);
+    goToEmailSequencesWs({
+      candidates: targets.map((s) => ({
+        email: s.email,
+        submissionId: s.id,
+        formId,
+        jobTitle: form?.title ?? null,
+        status: s.status,
+      })),
+      templateId: 'rejection',
+    });
   };
 
   const confirmDelete = async () => {
@@ -399,36 +516,14 @@ function SubmissionsView() {
   const selectedIds = [...selected];
 
   return (
-    <div className="flex min-h-screen flex-col bg-[#f2efe7] font-sans text-stone-800 antialiased">
-      <header className="sticky top-0 z-50 border-b border-plum/10 bg-white/90 backdrop-blur-md">
-        <div className="mx-auto flex w-full max-w-6xl items-center justify-between gap-4 px-5 py-3 lg:px-8">
-          <a href="!#" onClick={(e) => { e.preventDefault(); backTo(); }} className="flex items-center gap-2.5">
-            <span className="relative flex h-9 w-9 items-center justify-center rounded-lg bg-teal">
-              <span className="font-serif text-xl font-bold text-white">H</span>
-              <span className="absolute -bottom-1 -left-1 h-2 w-2 rounded-sm bg-gold" />
-            </span>
-            <span className="text-xl font-bold tracking-tight text-plum">HiOring</span>
-          </a>
-          <nav className="hidden items-center gap-6 text-sm font-medium text-stone-600 md:flex">
-            <button
-              type="button"
-              onClick={backTo}
-              className="rounded-full bg-plum px-5 py-2 text-sm font-semibold text-white transition hover:bg-plum-dark"
-            >
-              Back to dashboard
-            </button>
-          </nav>
-        </div>
-      </header>
-
-      <main className="mx-auto w-full max-w-6xl flex-grow px-5 py-8 lg:px-8">
-        <button
-          type="button"
-          onClick={backTo}
-          className="mb-6 inline-flex items-center gap-2 text-sm font-semibold text-stone-500 transition hover:text-plum"
-        >
-          <span aria-hidden="true">&larr;</span> All hiring form
-        </button>
+    <div>
+      <button
+        type="button"
+        onClick={backTo}
+        className="mb-6 inline-flex items-center gap-2 text-sm font-semibold text-stone-500 transition hover:text-plum"
+      >
+        <span aria-hidden="true">&larr;</span> All hiring form
+      </button>
 
         {error && (
           <div className="mb-5 rounded-[20px] bg-red-100 px-5 py-4 text-sm font-semibold text-red-600">
@@ -512,23 +607,34 @@ function SubmissionsView() {
                 <div className="ml-auto flex flex-wrap items-center gap-2">
                   <button
                     type="button"
-                    disabled={busy}
-                    onClick={() => changeStatus(selectedIds, 'APPROVED')}
+                    onClick={() =>
+                      setApproveTarget(
+                        selectedIds
+                          .map((id) => submissions.find((s) => s.id === id))
+                          .filter(Boolean)
+                          .filter((s) => s.status === 'PENDING')
+                      )
+                    }
                     className="rounded-full bg-[#a7eda7] px-4 py-1.5 text-xs font-bold text-[#0d6921] transition hover:brightness-95 disabled:opacity-50"
                   >
-                    Approve
+                    {inviteMode ? 'Invite' : 'Approve'}
                   </button>
                   <button
                     type="button"
-                    disabled={busy}
-                    onClick={() => changeStatus(selectedIds, 'REJECTED')}
+                    onClick={() =>
+                      setRejectTarget(
+                        selectedIds
+                          .map((id) => submissions.find((s) => s.id === id))
+                          .filter(Boolean)
+                          .filter((s) => s.status === 'PENDING')
+                      )
+                    }
                     className="rounded-full bg-red-500 px-4 py-1.5 text-xs font-bold text-white transition hover:brightness-95 disabled:opacity-50"
                   >
                     Reject
                   </button>
                   <button
                     type="button"
-                    disabled={busy}
                     onClick={() => setSelected(new Set())}
                     className="rounded-full bg-white/15 px-4 py-1.5 text-xs font-semibold text-white transition hover:bg-white/25 disabled:opacity-50"
                   >
@@ -549,9 +655,10 @@ function SubmissionsView() {
                     <tr className="border-b border-plum/10 text-[11px] uppercase tracking-wide text-stone-400">
                       <th className="px-4 py-3">
                         <Checkbox
-                          checked={submissions.length > 0 && selected.size === submissions.length}
+                          checked={pendingIds.length > 0 && pendingIds.every((id) => selected.has(id))}
                           onChange={toggleSelectAll}
-                          ariaLabel="Select all submissions"
+                          disabled={pendingIds.length === 0}
+                          ariaLabel={`Select all ${pendingIds.length} pending submissions`}
                         />
                       </th>
                       <th className="px-4 py-3">Applicant</th>
@@ -568,7 +675,12 @@ function SubmissionsView() {
                           <Checkbox
                             checked={selected.has(submission.id)}
                             onChange={() => toggleSelect(submission.id)}
-                            ariaLabel={`Select submission from ${submission.email}`}
+                            disabled={submission.status !== 'PENDING'}
+                            ariaLabel={
+                              submission.status === 'PENDING'
+                                ? `Select submission from ${getApplicantName(submission, form)}`
+                                : `${getApplicantName(submission, form)} is already marked and cannot be selected`
+                            }
                           />
                         </td>
                         <td className="px-4 py-3.5">
@@ -577,7 +689,7 @@ function SubmissionsView() {
                             onClick={() => openDetail(submission.id)}
                             className="font-semibold text-[#344e41] transition hover:text-plum"
                           >
-                            {submission.email}
+                            {getApplicantName(submission, form)}
                           </button>
                         </td>
                         <td className="px-4 py-3.5">
@@ -591,21 +703,19 @@ function SubmissionsView() {
                         </td>
                         <td className="px-4 py-3.5">
                           <div className="flex items-center justify-end gap-1.5">
-                            {submission.status !== 'APPROVED' && (
+                            {submission.status === 'PENDING' && (
                               <button
                                 type="button"
-                                disabled={busy}
-                                onClick={() => changeStatus([submission.id], 'APPROVED')}
+                                onClick={() => setApproveTarget([submission])}
                                 className="rounded-full border border-[#0d6921]/30 px-3 py-1 text-[11px] font-bold text-[#0d6921] transition hover:bg-[#a7eda7] disabled:opacity-50"
                               >
-                                Approve
+                                {inviteMode ? 'Invite' : 'Approve'}
                               </button>
                             )}
-                            {submission.status !== 'REJECTED' && (
+                            {submission.status === 'PENDING' && (
                               <button
                                 type="button"
-                                disabled={busy}
-                                onClick={() => changeStatus([submission.id], 'REJECTED')}
+                                onClick={() => setRejectTarget([submission])}
                                 className="rounded-full border border-red-300 px-3 py-1 text-[11px] font-bold text-red-600 transition hover:bg-red-100 disabled:opacity-50"
                               >
                                 Reject
@@ -613,9 +723,30 @@ function SubmissionsView() {
                             )}
                             <button
                               type="button"
-                              disabled={busy || rescoring || submission.cvEvaluation?.status === 'PROCESSING'}
+                              disabled={cvBusyId === submission.id || !submission.cvEvaluation?.file?.id}
+                              onClick={() => openCv(submission)}
+                              aria-label={`Review CV from ${getApplicantName(submission, form)}`}
+                              title={submission.cvEvaluation?.file?.id ? 'Review CV' : 'No CV available'}
+                              className="inline-flex items-center gap-1.5 rounded-full border border-teal/40 bg-teal/10 px-3 py-1 text-[11px] font-bold text-teal transition hover:bg-teal hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
+                            >
+                              {cvBusyId === submission.id ? (
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-3.5 w-3.5 animate-spin">
+                                  <path strokeLinecap="round" d="M12 3a9 9 0 109 9" />
+                                </svg>
+                              ) : (
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-3.5 w-3.5">
+                                  <path strokeLinecap="round" strokeLinejoin="round" d="M7 3h7l5 5v13a1 1 0 01-1 1H7a1 1 0 01-1-1V4a1 1 0 011-1z" />
+                                  <path strokeLinecap="round" d="M14 3v5h5" />
+                                  <path strokeLinecap="round" d="M9 13h6M9 17h4" />
+                                </svg>
+                              )}
+                              Review CV
+                            </button>
+                            <button
+                              type="button"
+                              disabled={rescoring || submission.cvEvaluation?.status === 'PROCESSING'}
                               onClick={() => doRescore(submission)}
-                              aria-label={`Rescore submission from ${submission.email}`}
+                              aria-label={`Rescore submission from ${getApplicantName(submission, form)}`}
                               title={
                                 submission.cvEvaluation?.status === 'PROCESSING'
                                   ? 'AI rescore already in progress'
@@ -630,7 +761,7 @@ function SubmissionsView() {
                             <button
                               type="button"
                               onClick={() => setDeleteTarget(submission)}
-                              aria-label={`Delete submission from ${submission.email}`}
+                              aria-label={`Delete submission from ${getApplicantName(submission, form)}`}
                               className="flex h-7 w-7 items-center justify-center rounded-full text-stone-400 transition hover:bg-red-100 hover:text-red-600"
                             >
                               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-4 w-4">
@@ -647,7 +778,6 @@ function SubmissionsView() {
             )}
           </div>
         )}
-      </main>
 
       {detailLoading && (
         <div className="fixed inset-0 z-[110] flex items-center justify-center bg-plum-dark/30 backdrop-blur-sm">
@@ -659,11 +789,28 @@ function SubmissionsView() {
 
       {deleteTarget && (
         <ConfirmDeleteModal
-          email={deleteTarget.email}
+          email={deleteTarget ? getApplicantName(deleteTarget, form) : ''}
           error={deleteError}
           deleting={deleting}
           onCancel={() => { setDeleteTarget(null); setDeleteError(null); }}
           onConfirm={confirmDelete}
+        />
+      )}
+
+      {approveTarget && (
+        <ConfirmApproveModal
+          count={approveTarget.length}
+          invite={inviteMode}
+          onCancel={() => setApproveTarget(null)}
+          onConfirm={confirmApprove}
+        />
+      )}
+
+      {rejectTarget && (
+        <ConfirmRejectModal
+          count={rejectTarget.length}
+          onCancel={() => setRejectTarget(null)}
+          onConfirm={confirmReject}
         />
       )}
     </div>

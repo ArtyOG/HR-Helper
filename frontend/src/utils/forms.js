@@ -19,6 +19,7 @@ export function getFormStatus(form, now = Date.now()) {
   if (!form) return 'Closed';
   const openAt = form.openAt ? new Date(form.openAt).getTime() : null;
   const closeAt = form.closeAt ? new Date(form.closeAt).getTime() : null;
+  if (openAt == null && closeAt == null) return 'Closed';
   if (closeAt != null && !Number.isNaN(closeAt) && now > closeAt) return 'Closed';
   if (openAt != null && !Number.isNaN(openAt) && now < openAt) return 'Scheduled';
   if (closeAt != null && !Number.isNaN(closeAt)) return 'Live';
@@ -26,11 +27,12 @@ export function getFormStatus(form, now = Date.now()) {
 }
 
 // Mirrors backend FormSubmissionsService.submit guard:
-// available when !openAt || now >= openAt, and !closeAt || now <= closeAt.
+// available only when a window is set (!openAt || now >= openAt) and (!closeAt || now <= closeAt).
 export function isFormAcceptingResponses(form, now = Date.now()) {
   if (!form) return false;
   const openAt = form.openAt ? new Date(form.openAt).getTime() : null;
   const closeAt = form.closeAt ? new Date(form.closeAt).getTime() : null;
+  if (openAt == null && closeAt == null) return false;
   if (openAt != null && !Number.isNaN(openAt) && now < openAt) return false;
   if (closeAt != null && !Number.isNaN(closeAt) && now > closeAt) return false;
   return true;

@@ -23,6 +23,9 @@ async function request(path, { method = 'GET', body } = {}) {
 
   const data = await response.json().catch(() => null);
   if (!response.ok) {
+    if (response.status === 401) {
+      window.dispatchEvent(new Event('auth:unauthorized'));
+    }
     const error = new Error(data?.message || `Request failed (${response.status})`);
     error.status = response.status;
     throw error;
@@ -151,6 +154,13 @@ export function rescoreSubmission(formId, submissionId) {
   });
 }
 
+export function sendTemplateEmail({ to, subject, templateName, context }) {
+  return request('/email/send-template', {
+    method: 'POST',
+    body: { to, subject, templateName, context },
+  });
+}
+
 export function listInterviewSlots(formId) {
   return request(`/forms/${formId}/interview-slots`);
 }
@@ -188,5 +198,3 @@ export function clearInterviewSlots(formId) {
 export function getInterviewBooking(submissionId) {
   return request(`/submissions/${submissionId}/interview-slot`);
 }
-
-

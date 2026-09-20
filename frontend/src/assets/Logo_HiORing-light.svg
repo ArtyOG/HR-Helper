@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 680 200" width="100%" height="100%">
+  <defs>
+    <style>
+      .bar-top { fill: #2d4c3a; }
+      .bar-mid { fill: #f0b324; }
+      .bar-bot { fill: #1c7882; }
+      .brand-text {
+        font-family: "Arial Black", "Helvetica Neue", Arial, sans-serif;
+        font-weight: 900;
+        font-size: 110px;
+        fill: #ffffff;
+        letter-spacing: -1.5px;
+      }
+    </style>
+  </defs>
+
+  <!-- Left horizontal rounded bars -->
+  <g>
+    <!-- Top Bar -->
+    <rect class="bar-top" x="25" y="32" width="128" height="17" rx="8.5" ry="8.5" />
+
+    <!-- Middle Bar -->
+    <rect class="bar-mid" x="25" y="60" width="96" height="26" rx="13" ry="13" />
+
+    <!-- Bottom Bar -->
+    <rect class="bar-bot" x="25" y="97" width="134" height="17" rx="8.5" ry="8.5" />
+  </g>
+
+  <!-- Brand Typography -->
+  <text x="168" y="112" class="brand-text">HiORing</text>
+</svg>

@@ -11,12 +11,14 @@ import CreateForm from './pages/CreateForm';
 import EditForm from './pages/EditForm';
 import FormView from './pages/FormView';
 import ApplyForm from './pages/ApplyForm';
+import SlotBooking from './pages/SlotBooking';
 import SubmissionsView from './pages/SubmissionsView';
 import InterviewScheduling from './pages/InterviewScheduling';
 import WorkspaceShell from './components/workspace/WorkspaceShell';
 import CandidateSchedule from './pages/CandidateSchedule';
+import EmailSequences from './pages/EmailSequences';
+import InterviewSlots from './pages/InterviewSlots';
 import { Toaster } from 'sonner';
-
 
 // Live hot-reload verified with polling
 function RequireAuth({ children }) {
@@ -32,7 +34,7 @@ function RequireAuth({ children }) {
           <button
             type="button"
             onClick={() => window.location.reload()}
-            className="mt-5 rounded-full bg-plum px-6 py-2.5 text-sm font-semibold text-white transition hover:bg-plum-dark"
+            className="mt-4 inline-flex items-center justify-center rounded-xl bg-plum px-4 py-2 text-sm font-medium text-white transition hover:bg-plum/90"
           >
             Retry
           </button>
@@ -40,12 +42,28 @@ function RequireAuth({ children }) {
       </div>
     );
   }
-  if (!user) return <Navigate to="/login" replace />;
+  if (!user) {
+    return <Navigate to="/login" replace />;
+  }
+
   return children;
 }
 
-function App() {
+function RootRoute() {
+  const { user, loading } = useAuth();
 
+  if (loading) return null;
+  if (user) return <Navigate to="/home" replace />;
+  return <LandingPage />;
+}
+
+function RedirectToWorkspaceForm() {
+  const { pathname } = useLocation();
+  const suffix = pathname.replace(/^\/hr\/forms/, '');
+  return <Navigate to={`/workspace/forms${suffix}`} replace />;
+}
+
+function App() {
   const location = useLocation();
   const background = location.state && location.state.background;
 
@@ -53,7 +71,7 @@ function App() {
     <AuthProvider>
       <NavigationProvider>
         <Routes location={background || location}>
-          <Route path="/" element={<LandingPage />} />
+          <Route path="/" element={<RootRoute />} />
           <Route path="/login" element={<Authentication />} />
           <Route path="/apply/:formId" element={<ApplyForm />} />
           <Route path="/schedule/:formId/:submissionId" element={<CandidateSchedule />} />
@@ -65,46 +83,8 @@ function App() {
               </RequireAuth>
             }
           />
-          <Route
-            path="/hr"
-            element={
-              <RequireAuth>
-                <HRPage />
-              </RequireAuth>
-            }
-          />
-          <Route
-            path="/hr/forms/new"
-            element={
-              <RequireAuth>
-                <CreateForm />
-              </RequireAuth>
-            }
-          />
-          <Route
-            path="/hr/forms/:formId/edit"
-            element={
-              <RequireAuth>
-                <EditForm />
-              </RequireAuth>
-            }
-          />
-          <Route
-            path="/hr/forms/:formId"
-            element={
-              <RequireAuth>
-                <FormView />
-              </RequireAuth>
-            }
-          />
-          <Route
-            path="/hr/forms/:formId/submissions"
-            element={
-              <RequireAuth>
-                <SubmissionsView />
-              </RequireAuth>
-            }
-          />
+          <Route path="/hr" element={<Navigate to="/home" replace />} />
+          <Route path="/hr/forms/*" element={<RedirectToWorkspaceForm />} />
           <Route
             path="/hr/forms/:formId/interviews"
             element={
@@ -118,73 +98,21 @@ function App() {
             path="/workspace"
             element={
               <RequireAuth>
-                <User_Workspace />
+                <WorkspaceShell />
               </RequireAuth>
             }
-          />
-          <Route
-            path="/workspace/jobs"
-            element={
-              <RequireAuth>
-                <JobListingsPage />
-              </RequireAuth>
-            }
-          />
-
-
-
-          <Route
-
-            path="/workspace/forms/new"
-            element={
-              <RequireAuth>
-                <WorkspaceShell>
-                  <CreateForm />
-                </WorkspaceShell>
-              </RequireAuth>
-            }
-          />
-          <Route
-            path="/workspace/forms/:formId/edit"
-            element={
-              <RequireAuth>
-                <WorkspaceShell>
-                  <EditForm />
-                </WorkspaceShell>
-              </RequireAuth>
-            }
-          />
-          <Route
-            path="/workspace/forms/:formId"
-            element={
-              <RequireAuth>
-                <WorkspaceShell>
-                  <FormView />
-                </WorkspaceShell>
-              </RequireAuth>
-            }
-          />
-          <Route
-            path="/workspace/forms/:formId/submissions"
-            element={
-              <RequireAuth>
-                <WorkspaceShell>
-                  <SubmissionsView />
-                </WorkspaceShell>
-              </RequireAuth>
-            }
-          />
-          <Route
-            path="/workspace/forms/:formId/interviews"
-            element={
-              <RequireAuth>
-                <WorkspaceShell>
-                  <InterviewScheduling />
-                </WorkspaceShell>
-              </RequireAuth>
-            }
-          />
-
+          >
+            <Route index element={<Navigate to="/workspace/dashboard" replace />} />
+            <Route path="dashboard" element={<User_Workspace />} />
+            <Route path="jobs" element={<JobListingsPage />} />
+            <Route path="email-sequences" element={<EmailSequences />} />
+            <Route path="interview-slots" element={<InterviewSlots />} />
+            <Route path="forms/new" element={<CreateForm />} />
+            <Route path="forms/:formId/edit" element={<EditForm />} />
+            <Route path="forms/:formId" element={<FormView />} />
+            <Route path="forms/:formId/submissions" element={<SubmissionsView />} />
+            <Route path="forms/:formId/interviews" element={<InterviewScheduling />} />
+          </Route>
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
         {background && (

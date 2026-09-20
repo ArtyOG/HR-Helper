@@ -4,6 +4,7 @@ import { useFormsBackNav } from '../hooks/useFormsBackNav';
 import { getForm } from '../services/api';
 import { formatDateTime, getFormStatus, getNextStatusTime } from '../utils/forms';
 import { useNow } from '../hooks/useNow';
+import StatusBadge from '../components/common/StatusBadge';
 
 const sortByOrder = (items) =>
   [...items].sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
@@ -120,44 +121,28 @@ function FormView() {
   const status = getFormStatus(form, now);
 
   return (
-    <div className="flex min-h-screen flex-col bg-[#f2efe7] font-sans text-stone-800 antialiased">
-      <header className="sticky top-0 z-50 border-b border-plum/10 bg-white/90 backdrop-blur-md">
-        <div className="mx-auto flex w-full max-w-6xl items-center justify-between gap-4 px-5 py-3 lg:px-8">
-          <a href="!#" onClick={(e) => { e.preventDefault(); backTo(); }} className="flex items-center gap-2.5">
-            <span className="relative flex h-9 w-9 items-center justify-center rounded-lg bg-teal">
-              <span className="font-serif text-xl font-bold text-white">H</span>
-              <span className="absolute -bottom-1 -left-1 h-2 w-2 rounded-sm bg-gold" />
-            </span>
-            <span className="text-xl font-bold tracking-tight text-plum">HiOring</span>
-          </a>
+    <div>
+      <button
+        type="button"
+        onClick={backTo}
+        className="mb-6 inline-flex items-center gap-2 text-sm font-semibold text-stone-500 transition hover:text-plum"
+      >
+        <span aria-hidden="true">&larr;</span> Back to dashboard
+      </button>
 
-          <nav className="hidden items-center gap-6 text-sm font-medium text-stone-600 md:flex">
-            <button
-              type="button"
-              onClick={backTo}
-              className="rounded-full bg-plum px-5 py-2 text-sm font-semibold text-white transition hover:bg-plum-dark"
-            >
-              Back to dashboard
-            </button>
-          </nav>
+      {error && (
+        <div className="rounded-[20px] bg-red-100 px-5 py-4 text-sm font-semibold text-red-600">
+          {error}
         </div>
-      </header>
+      )}
 
-      <main className="flex-grow">
-        <div className="mx-auto w-full max-w-3xl px-5 py-8 lg:px-8">
-          {error && (
-            <div className="rounded-[20px] bg-red-100 px-5 py-4 text-sm font-semibold text-red-600">
-              {error}
-            </div>
-          )}
+      {!form && !error && (
+        <div className="rounded-[20px] bg-white/60 px-5 py-6 text-sm text-stone-500 ring-1 ring-plum/10">
+          Loading form...
+        </div>
+      )}
 
-          {!form && !error && (
-            <div className="rounded-[20px] bg-white/60 px-5 py-6 text-sm text-stone-500 ring-1 ring-plum/10">
-              Loading form...
-            </div>
-          )}
-
-          {form && (
+      {form && (
             <div className="rounded-[20px] bg-[#f2efe7] p-5 ring-1 ring-plum/10 sm:p-8">
               <div className="flex items-start justify-between gap-4">
                 <div className="min-w-0">
@@ -171,26 +156,7 @@ function FormView() {
                 </span>
               </div>
               <div className="mt-3 flex flex-wrap items-center gap-2 text-xs font-semibold text-stone-500">
-                <span
-                  className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 ${
-                    status === 'Live'
-                      ? 'bg-[#a7eda7] text-[#0d6921]'
-                      : status === 'Scheduled'
-                        ? 'bg-gold text-plum'
-                        : 'bg-white text-[#757575] ring-1 ring-plum/10'
-                  }`}
-                >
-                  <span
-                    className={`h-1.5 w-1.5 rounded-full ${
-                      status === 'Live'
-                        ? 'bg-[#0d6921]'
-                        : status === 'Scheduled'
-                          ? 'bg-plum'
-                          : 'bg-[#757575]'
-                    }`}
-                  />
-                  {status}
-                </span>
+                <StatusBadge preset="form" status={status} />
                 {form.closeAt && <span>Close at: {formatDateTime(form.closeAt)}</span>}
                 {status === 'Scheduled' && form.openAt && (
                   <span>Opens at: {formatDateTime(form.openAt)}</span>
@@ -225,8 +191,6 @@ function FormView() {
             </div>
           )}
         </div>
-      </main>
-    </div>
   );
 }
 
