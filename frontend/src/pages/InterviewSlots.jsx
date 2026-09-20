@@ -35,31 +35,6 @@ function ClockIcon() {
   );
 }
 
-function BellIcon() {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5" aria-hidden="true">
-      <path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9" />
-      <path d="M10.3 21a1.94 1.94 0 0 0 3.4 0" />
-    </svg>
-  );
-}
-
-function MessageIcon() {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5" aria-hidden="true">
-      <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
-    </svg>
-  );
-}
-
-function Badge({ count }) {
-  return (
-    <span className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-gold px-1 text-[10px] font-bold text-plum">
-      {count}
-    </span>
-  );
-}
-
 const rowTimeLabel = (start, bucket) => {
   const iso = start.toISOString();
   if (bucket === 'today') return `Today · ${formatTime(iso)}`;
@@ -236,22 +211,6 @@ export default function InterviewSlots() {
             </div>
 
             <div className="flex flex-wrap items-center gap-2 sm:gap-3">
-              <button
-                type="button"
-                aria-label="Notifications"
-                className="relative flex h-[51px] w-[51px] items-center justify-center rounded-2xl bg-white text-plum shadow-sm ring-1 ring-plum/10 transition hover:text-teal"
-              >
-                <BellIcon />
-                <Badge count="2" />
-              </button>
-              <button
-                type="button"
-                aria-label="Messages"
-                className="relative flex h-[51px] w-[51px] items-center justify-center rounded-2xl bg-white text-plum shadow-sm ring-1 ring-plum/10 transition hover:text-teal"
-              >
-                <MessageIcon />
-                <Badge count="2" />
-              </button>
               <UserMenu />
             </div>
           </div>

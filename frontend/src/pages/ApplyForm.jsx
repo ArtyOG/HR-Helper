@@ -7,7 +7,7 @@ import { useNow } from '../hooks/useNow';
 const sortByOrder = (items) =>
   [...items].sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
 
-const isEmailField = (f) => (f.label || '').trim().toLowerCase() === 'email';
+const isEmailField = (f) => (f.label || '').trim().toLowerCase().includes('email');
 
 function FieldRow({ field, value, onChange, showErrors }) {
   const error = showErrors && field.required && !String(value ?? '').trim();

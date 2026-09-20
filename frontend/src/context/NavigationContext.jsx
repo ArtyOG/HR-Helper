@@ -28,6 +28,7 @@ export function NavigationProvider({ children }) {
       goToInterviewsWs: (formId) => navigate(`/workspace/forms/${formId}/interviews`),
       goToEmailSequencesWs: (state) => navigate('/workspace/email-sequences', { state }),
       goToInterviewSlotsWs: () => navigate('/workspace/interview-slots'),
+      goToBillingWs: () => navigate('/workspace/billing'),
     }),
     [navigate, location]
   );

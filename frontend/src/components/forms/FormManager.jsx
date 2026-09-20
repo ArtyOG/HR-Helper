@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { listForms } from '../../services/api';
 import { formatDateTime, getFormStatus, getNextFormsStatusTime } from '../../utils/forms';
 import { useNow } from '../../hooks/useNow';
@@ -59,6 +59,24 @@ function RecentCard({ form, now, onView, onEdit, onDelete, onDuplicate, onCopyLi
   const applicants = form.applicants ?? form.submissionCount ?? 0;
   const score = Math.min(Number(applicants) || 0, 100);
   const status = getFormStatus(form, now);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuRef = useRef(null);
+
+  useEffect(() => {
+    if (!menuOpen) return;
+    const onPointerDown = (e) => {
+      if (menuRef.current && !menuRef.current.contains(e.target)) setMenuOpen(false);
+    };
+    const onKeyDown = (e) => {
+      if (e.key === 'Escape') setMenuOpen(false);
+    };
+    document.addEventListener('mousedown', onPointerDown);
+    document.addEventListener('keydown', onKeyDown);
+    return () => {
+      document.removeEventListener('mousedown', onPointerDown);
+      document.removeEventListener('keydown', onKeyDown);
+    };
+  }, [menuOpen]);
 
   return (
     <article
@@ -79,7 +97,8 @@ function RecentCard({ form, now, onView, onEdit, onDelete, onDuplicate, onCopyLi
       <div className="flex items-center justify-end">
         {(onView || onEdit || onDelete || onCopyLink) && (
           <div
-            className="popup"
+            ref={menuRef}
+            className={`popup ${menuOpen ? 'open' : ''}`}
             onClick={(e) => e.stopPropagation()}
             onKeyDown={(e) => e.stopPropagation()}
           >
@@ -87,6 +106,11 @@ function RecentCard({ form, now, onView, onEdit, onDelete, onDuplicate, onCopyLi
               type="button"
               aria-label="Form actions"
               aria-haspopup="true"
+              aria-expanded={menuOpen}
+              onClick={(e) => {
+                e.stopPropagation();
+                setMenuOpen((prev) => !prev);
+              }}
               className="burger cursor-pointer"
             >
               <span />
@@ -94,7 +118,7 @@ function RecentCard({ form, now, onView, onEdit, onDelete, onDuplicate, onCopyLi
               <span />
             </button>
 
-            <nav className="popup-window" aria-label="Form actions">
+            <nav className="popup-window" aria-label="Form actions" onClick={() => setMenuOpen(false)}>
               <legend>Form actions</legend>
               <ul>
                 {onView && (

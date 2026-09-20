@@ -33,37 +33,24 @@ const INITIAL_TEMPLATES = [
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
+const renderTemplateText = (text = '', context = {}) =>
+  String(text)
+    .split('[Candidate Name]').join(context.candidateName || '[Candidate Name]')
+    .split('{{candidateName}}').join(context.candidateName || '')
+    .split('[Position Name]').join(context.jobTitle || '[Position Name]')
+    .split('{{role}}').join(context.jobTitle || '{{role}}')
+    .split('{{jobTitle}}').join(context.jobTitle || '')
+    .split('[Company Name]').join(context.companyName || '[Company Name]')
+    .split('{{companyName}}').join(context.companyName || '')
+    .split('[Interview Scheduling Link]').join(context.scheduleLink || '[Interview Scheduling Link]')
+    .split('{{scheduleLink}}').join(context.scheduleLink || '');
+
 const initialsFromEmail = (email = '') => {
   const local = (email || '').split('@')[0] || '';
   const parts = local.split(/[.\s_-]+/).filter(Boolean);
   if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase();
   return local.slice(0, 2).toUpperCase();
 };
-
-function BellIcon() {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-6 w-6">
-      <path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9" />
-      <path d="M13.7 21a2 2 0 0 1-3.4 0" />
-    </svg>
-  );
-}
-
-function MessageIcon() {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-6 w-6">
-      <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z" />
-    </svg>
-  );
-}
-
-function Badge({ count }) {
-  return (
-    <span className="absolute -right-0.5 -top-0.5 flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-[#F90808] px-1 text-[10px] font-bold leading-none text-white">
-      {count}
-    </span>
-  );
-}
 
 function PencilIcon() {
   return (
@@ -283,7 +270,7 @@ function SendModal({ template, draft, candidate, preloadedCandidates = [], onSel
         try {
           await sendTemplateEmail({
             to: c.email,
-            subject: draft.subject,
+            subject: renderTemplateText(draft.subject, context),
             templateName: template.id,
             context: {
               candidateName: (c.email || '').split('@')[0],
@@ -422,7 +409,11 @@ function SendModal({ template, draft, candidate, preloadedCandidates = [], onSel
                 Subject preview
               </span>
               <span className="mt-2 block truncate rounded-xl bg-white px-4 py-2.5 text-sm font-semibold text-stone-700 ring-1 ring-plum/10">
-                {draft.subject || '(no subject)'}
+                {renderTemplateText(draft.subject, {
+                  candidateName: (preloaded[0]?.email || '').split('@')[0],
+                  jobTitle: preloaded[0]?.jobTitle || '',
+                  companyName: 'HiOring',
+                }) || '(no subject)'}
               </span>
             </label>
 
@@ -704,6 +695,18 @@ function EmailSequences() {
     ? 'cursor-text border border-plum/15 shadow-sm focus:border-teal focus:ring-2 focus:ring-teal/20'
     : 'cursor-not-allowed border border-transparent bg-[#f3f1e9] text-stone-600';
 
+  const previewTarget = incomingCandidates[0] || candidate;
+  const previewContext = {
+    candidateName: previewTarget ? (previewTarget.email || '').split('@')[0] : '',
+    jobTitle: previewTarget?.jobTitle || '',
+    companyName: 'HiOring',
+    scheduleLink:
+      previewTarget?.formId && previewTarget?.submissionId
+        ? `${window.location.origin}/schedule/${previewTarget.formId}/${previewTarget.submissionId}`
+        : '',
+  };
+  const previewBody = renderTemplateText(draft.body, previewContext);
+
   return (
     <div>
       <div className="flex flex-wrap items-start justify-between gap-x-4 gap-y-3">
@@ -717,22 +720,6 @@ function EmailSequences() {
         </div>
 
         <div className="flex items-center gap-2 sm:gap-3">
-          <button
-            type="button"
-            aria-label="Notifications"
-            className="relative flex h-[51px] w-[51px] items-center justify-center rounded-2xl bg-white text-plum shadow-sm ring-1 ring-plum/10 transition hover:text-teal"
-          >
-            <BellIcon />
-            <Badge count="2" />
-          </button>
-          <button
-            type="button"
-            aria-label="Messages"
-            className="relative flex h-[51px] w-[51px] items-center justify-center rounded-2xl bg-white text-plum shadow-sm ring-1 ring-plum/10 transition hover:text-teal"
-          >
-            <MessageIcon />
-            <Badge count="2" />
-          </button>
           <UserMenu />
         </div>
       </div>
@@ -785,18 +772,12 @@ function EmailSequences() {
             </div>
 
             <div>
-              <label htmlFor="email-body" className="block text-xs font-bold uppercase tracking-wider text-plum">
-                Body
-              </label>
-              <textarea
-                id="email-body"
-                value={draft.body}
-                onChange={(e) => updateDraft('body', e.target.value)}
-                disabled={!editing}
-                rows={12}
-                placeholder="Write your email body here…"
-                className={`${inputBase} ${inputState} min-h-[240px] resize-y px-4 py-3 leading-relaxed`}
-              />
+              <p className="block text-xs font-bold uppercase tracking-wider text-plum">
+                Body preview <span className="font-medium normal-case text-stone-400">(rendered on send)</span>
+              </p>
+              <pre className={`mt-2 min-h-[240px] overflow-x-auto rounded-xl px-4 py-3 text-base leading-relaxed whitespace-pre-wrap text-stone-700 ${inputState}`}>
+                {previewBody || '(empty template)'}
+              </pre>
             </div>
           </div>
 

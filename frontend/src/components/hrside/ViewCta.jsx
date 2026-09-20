@@ -21,7 +21,7 @@ function ViewCta() {
           </div>
           <div className="shrink-0">
             <a
-              href="#top"
+              href="#view"
               onMouseEnter={() => setHovered(true)}
               onMouseLeave={() => setHovered(false)}
               onClick={(e) => {

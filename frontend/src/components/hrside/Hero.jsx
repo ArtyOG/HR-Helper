@@ -1,11 +1,13 @@
 import { useLayoutEffect, useEffect, useRef, useState } from 'react';
 import { useNavigation } from '../../context/NavigationContext';
+import { useAuth } from '../../context/AuthContext';
 import { listForms } from '../../services/api';
 import { getFormStatus, getNextStatusTime } from '../../utils/forms';
 import { useNow } from '../../hooks/useNow';
 
 function Hero() {
   const { goToWorkspace } = useNavigation();
+  const { user } = useAuth();
   const [authHovered, setAuthHovered] = useState('trial');
   const [authPill, setAuthPill] = useState({ x: 0, w: 0, ready: false });
   const [latestForm, setLatestForm] = useState(null);
@@ -22,12 +24,13 @@ function Hero() {
   }, []);
 
   useEffect(() => {
+    if (!user) return;
     listForms()
       .then((forms) => {
         if (Array.isArray(forms) && forms.length > 0) setLatestForm(forms[0]);
       })
       .catch(() => {});
-  }, []);
+  }, [user]);
 
   const moveAuthPill = (ref) => {
     if (!ref.current) return;
@@ -124,10 +127,18 @@ function Hero() {
             <div className="relative rounded-[2rem] border border-plum/10 bg-white p-6 shadow-2xl shadow-plum/20 sm:p-8">
               <p className="text-sm font-bold uppercase tracking-widest text-teal">Recent forms</p>
               <h3 className="mt-2 font-sans text-2xl font-bold text-plum">
-                {latestForm ? latestForm.title : 'No form yet'}
+                {!user
+                  ? 'Sign in to see recent forms'
+                  : latestForm
+                    ? latestForm.title
+                    : 'No form yet'}
               </h3>
               <p className="mt-1 text-lg font-semibold text-plum">
-                {latestForm ? `${latestForm.submissionCount ?? 0} applicants` : 'Create your first form'}
+                {!user
+                  ? 'Your forms and applicants will appear here'
+                  : latestForm
+                    ? `${latestForm.submissionCount ?? 0} applicants`
+                    : 'Create your first form'}
               </p>
               <div className="mt-6 space-y-3">
                 {['Blank Form', 'Standard form'].map((name) => (
@@ -139,7 +150,13 @@ function Hero() {
               </div>
               <div className="mt-6 flex items-center justify-between rounded-xl bg-plum px-4 py-3">
                 <span className="text-sm font-semibold text-white">
-                  {latestForm ? (latestFormLive ? 'Now accepting responses' : 'Form closed') : 'New form ready'}
+                  {!user
+                    ? 'Sign in to view your workspace'
+                    : latestForm
+                      ? latestFormLive
+                        ? 'Now accepting responses'
+                        : 'Form closed'
+                      : 'New form ready'}
                 </span>
                 <span
                   className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium ${

@@ -1,3 +1,6 @@
+import { useState } from 'react';
+import { toast } from 'sonner';
+
 function Badge({ children }) {
   return (
     <span className="inline-flex items-center rounded-full bg-plum px-5 py-2 text-xs font-semibold uppercase tracking-wide text-white">
@@ -33,13 +36,38 @@ const socials = [
 ];
 
 const inputFields = [
-  { label: 'Name', placeholder: 'Jennifer Vin', type: 'text' },
-  { label: 'Email', placeholder: 'email@example.com', type: 'email' },
-  { label: 'Subject', placeholder: 'ex : service', type: 'text' },
-  { label: 'Phone Number', placeholder: '097 92 72 956', type: 'tel' },
+  { key: 'name', label: 'Name', placeholder: 'Jennifer Vin', type: 'text' },
+  { key: 'email', label: 'Email', placeholder: 'email@example.com', type: 'email' },
+  { key: 'subject', label: 'Subject', placeholder: 'ex : service', type: 'text' },
+  { key: 'phone', label: 'Phone Number', placeholder: '097 92 72 956', type: 'tel' },
 ];
 
+const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
 function Support() {
+  const [values, setValues] = useState({ name: '', email: '', subject: '', phone: '', message: '' });
+
+  const setValue = (key) => (e) => setValues((prev) => ({ ...prev, [key]: e.target.value }));
+
+  const handleSubmit = (event) => {
+    event.preventDefault();
+    const { name, email, message } = values;
+    if (!name.trim()) {
+      toast.error('Please add your name so we know who to reply to.');
+      return;
+    }
+    if (!EMAIL_PATTERN.test((email || '').trim())) {
+      toast.error('Please enter a valid email address.');
+      return;
+    }
+    if ((message || '').trim().length < 10) {
+      toast.error('Please write a message of at least 10 characters.');
+      return;
+    }
+    toast.success('Your message has been sent — we\u2019ll get back to you soon.');
+    setValues({ name: '', email: '', subject: '', phone: '', message: '' });
+  };
+
   return (
     <section id="support" className="bg-white py-20 lg:py-24">
       <div className="mx-auto max-w-site px-6 lg:px-8">
@@ -96,14 +124,16 @@ function Support() {
 
           <form
             className="grid gap-6 rounded-[59px] bg-[#F2F0E8] p-10 sm:grid-cols-2"
-            onSubmit={(event) => event.preventDefault()}
+            onSubmit={handleSubmit}
           >
             {inputFields.map((field) => (
-              <label key={field.label} className="flex flex-col gap-2">
+              <label key={field.key} className="flex flex-col gap-2">
                 <span className="text-base font-semibold text-plum">{field.label}</span>
                 <input
                   type={field.type}
                   placeholder={field.placeholder}
+                  value={values[field.key]}
+                  onChange={setValue(field.key)}
                   className="rounded-2xl border border-transparent bg-white px-5 py-4 text-base text-plum placeholder:text-stone-400 focus:border-plum/40 focus:outline-none"
                 />
               </label>
@@ -113,6 +143,8 @@ function Support() {
               <textarea
                 rows="5"
                 placeholder="Please type your message here ......"
+                value={values.message}
+                onChange={setValue('message')}
                 className="w-full resize-none rounded-2xl border border-transparent bg-white px-5 py-4 text-base text-plum placeholder:text-stone-400 focus:border-plum/40 focus:outline-none"
               />
             </label>

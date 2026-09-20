@@ -17,12 +17,17 @@ const socials = [
   },
 ];
 
+const scrollToTop = (e) => {
+  e.preventDefault();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+};
+
 function Footer() {
   return (
     <footer id="contact" className="bg-plum-dark text-white">
       <div className="mx-auto max-w-site grid gap-12 px-6 py-16 sm:grid-cols-2 lg:grid-cols-[1.4fr_1fr_1fr_1fr] lg:px-8">
         <div>
-          <a href="#top" className="flex items-center gap-3">
+          <a href="#top" onClick={scrollToTop} className="flex items-center gap-3">
             <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-gold font-sans text-2xl font-bold text-plum">
               H
             </span>
@@ -37,6 +42,7 @@ function Footer() {
               <a
                 key={social.label}
                 href="#top"
+                onClick={scrollToTop}
                 aria-label={social.label}
                 className="flex h-10 w-10 items-center justify-center rounded-full bg-white/10 transition hover:bg-gold hover:text-plum"
               >
