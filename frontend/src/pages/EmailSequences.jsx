@@ -268,18 +268,19 @@ function SendModal({ template, draft, candidate, preloadedCandidates = [], onSel
         const form = formList.find((f) => f.id === c.formId);
         const title = c.jobTitle || form?.title || '';
         try {
+          const emailContext = {
+            candidateName: (c.email || '').split('@')[0],
+            jobTitle: title,
+            companyName: 'HiOring',
+            scheduleLink: c.formId && c.submissionId
+              ? `${window.location.origin}/schedule/${c.formId}/${c.submissionId}`
+              : '',
+          };
           await sendTemplateEmail({
             to: c.email,
-            subject: renderTemplateText(draft.subject, context),
+            subject: renderTemplateText(draft.subject, emailContext),
             templateName: template.id,
-            context: {
-              candidateName: (c.email || '').split('@')[0],
-              jobTitle: title,
-              companyName: 'HiOring',
-              scheduleLink: c.formId && c.submissionId
-                ? `${window.location.origin}/schedule/${c.formId}/${c.submissionId}`
-                : '',
-            },
+            context: emailContext,
           });
           sentForClick += 1;
           if (c.formId && c.submissionId) {
