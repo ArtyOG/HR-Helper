@@ -26,9 +26,10 @@ const InterviewSlots = lazy(() => import('./pages/InterviewSlots'));
 const Billing = lazy(() => import('./pages/Billing'));
 
 function RequireAuth({ children }) {
-  const { user, loading, authError } = useAuth();
+  const { user, loading, authError, isLoggingOut } = useAuth();
 
   if (loading) return <PageLoader full />;
+  if (isLoggingOut) return <Navigate to="/" replace />;
   if (authError && !user) {
     return (
       <div className="flex min-h-screen items-center justify-center px-6">

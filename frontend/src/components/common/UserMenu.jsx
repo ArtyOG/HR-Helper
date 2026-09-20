@@ -29,7 +29,6 @@ function UserMenu() {
   const handleLogout = async () => {
     setOpen(false);
     await logout();
-    navigate('/');
   };
 
   return (
