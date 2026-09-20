@@ -11,8 +11,17 @@ export async function getApiHealth() {
   return response.json();
 }
 
-async function request(path, { method = 'GET', body } = {}) {
+function getAuthHeaders() {
   const headers = { 'Content-Type': 'application/json' };
+  const token = localStorage.getItem('HiOringToken');
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
+  return headers;
+}
+
+async function request(path, { method = 'GET', body } = {}) {
+  const headers = getAuthHeaders();
 
   const response = await fetch(`${API_URL}${API_PREFIX}${path}`, {
     method,
@@ -24,6 +33,7 @@ async function request(path, { method = 'GET', body } = {}) {
   const data = await response.json().catch(() => null);
   if (!response.ok) {
     if (response.status === 401) {
+      localStorage.removeItem('HiOringToken');
       window.dispatchEvent(new Event('auth:unauthorized'));
     }
     const error = new Error(data?.message || `Request failed (${response.status})`);
@@ -38,7 +48,7 @@ export async function checkAuth() {
   try {
     response = await fetch(`${API_URL}${API_PREFIX}/forms`, {
       method: 'GET',
-      headers: { 'Content-Type': 'application/json' },
+      headers: getAuthHeaders(),
       credentials: 'include',
     });
   } catch {
@@ -46,7 +56,10 @@ export async function checkAuth() {
   }
 
   if (response.status === 200) return { authenticated: true };
-  if (response.status === 401) return { authenticated: false };
+  if (response.status === 401) {
+    localStorage.removeItem('HiOringToken');
+    return { authenticated: false };
+  }
 
   const error = new Error(`Session check failed (${response.status})`);
   error.status = response.status;
@@ -54,9 +67,12 @@ export async function checkAuth() {
 }
 
 export async function logout() {
+  const headers = getAuthHeaders();
+  localStorage.removeItem('HiOringToken');
+
   const response = await fetch(`${API_URL}/auth/logout`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers,
     credentials: 'include',
   });
 

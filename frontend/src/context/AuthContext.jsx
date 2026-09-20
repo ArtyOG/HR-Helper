@@ -18,6 +18,15 @@ export function AuthProvider({ children }) {
   }, []);
 
   useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const urlToken = params.get('token');
+    if (urlToken) {
+      localStorage.setItem('HiOringToken', urlToken);
+      params.delete('token');
+      const cleanSearch = params.toString() ? `?${params.toString()}` : '';
+      window.history.replaceState({}, document.title, window.location.pathname + cleanSearch);
+    }
+
     let active = true;
     checkAuth()
       .then((data) => {
@@ -44,6 +53,7 @@ export function AuthProvider({ children }) {
     } catch {
       // ignore network errors on logout
     }
+    localStorage.removeItem('HiOringToken');
     setUser(null);
     setAuthError(null);
   };

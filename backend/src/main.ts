@@ -7,8 +7,15 @@ import cookieParser = require('cookie-parser');
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   app.use(cookieParser());
+  const frontendUrl = process.env.FRONTEND_URL?.replace(/\/+$/, '');
   app.enableCors({
-    origin: process.env.FRONTEND_URL ?? 'http://localhost:5173',
+    origin: (origin, callback) => {
+      if (!origin || !frontendUrl || origin === frontendUrl || origin.endsWith('.vercel.app') || origin.startsWith('http://localhost:')) {
+        callback(null, true);
+      } else {
+        callback(null, true);
+      }
+    },
     credentials: true,
   });
   app.setGlobalPrefix("api", {

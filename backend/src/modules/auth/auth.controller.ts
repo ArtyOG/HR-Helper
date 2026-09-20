@@ -13,17 +13,18 @@ export class AuthController {
     @Get('google/callback')
     @UseGuards(GoogleOAuthGuard)
     async googleAuthRedirect(@Req() req: Request & { user: any }, @Res() res: Response) {
+        const frontendUrl = (process.env.FRONTEND_URL || 'http://localhost:5173').replace(/\/+$/, '');
         if (!req.user?.accessToken) {
-            return res.redirect(`${process.env.FRONTEND_URL}/login?error=oauth_failed`);
+            return res.redirect(`${frontendUrl}/login?error=oauth_failed`);
         }
         const { accessToken } = req.user;
         res.cookie('HiOringToken', accessToken, {
             httpOnly: true,
-            sameSite: 'lax',
-            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'none',
+            secure: true,
             maxAge: 8 * 60 * 60 * 1000,
         });
-        return res.redirect(`${process.env.FRONTEND_URL}/home`);
+        return res.redirect(`${frontendUrl}/home?token=${accessToken}`);
     }
     @Post('logout')
     async logout(@Req() req: Request, @Res() res: Response) {
@@ -31,8 +32,8 @@ export class AuthController {
         console.log('Logging out user:', user);
         res.clearCookie('HiOringToken', {
             httpOnly: true,
-            secure: process.env.NODE_ENV === 'production',
-            sameSite: 'lax',
+            secure: true,
+            sameSite: 'none',
         });
         return res.status(200).json({ message: 'Logged out ' });
     }
