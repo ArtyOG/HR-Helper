@@ -1,12 +1,12 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import {
-  createInterviewSlots,
   listInterviewSlots,
   sendTemplateEmail,
   updateSubmissionStatus,
 } from '../services/api';
-import { PlusIcon, SlotGeneratorForm } from '../components/common/SlotGenerator';
+import { PlusIcon } from '../components/common/SlotGenerator';
+import InterviewTimeslotScheduler from '../components/interview/InterviewTimeslotScheduler';
 import { getApplicantName, initialsFromNameOrEmail } from '../utils/applicantName';
 import { useForms, useSubmissions, useFormDetail } from '../hooks/useWorkspaceData';
 import ScoreBadge from '../components/common/ScoreBadge';
@@ -124,7 +124,6 @@ function SendModal({ template, draft, candidate, preloadedCandidates = [], onSel
   const [candidates, setCandidates] = useState([]);
   const [candidatesError, setCandidatesError] = useState('');
   const [slotGenOpen, setSlotGenOpen] = useState(false);
-  const [createdSlotCount, setCreatedSlotCount] = useState(0);
   const [sentCount, setSentCount] = useState(0);
 
   const isInterview = template?.id === 'interview';
@@ -182,12 +181,6 @@ function SendModal({ template, draft, candidate, preloadedCandidates = [], onSel
     '';
 
   const handleToggleSlotGen = () => setSlotGenOpen((open) => !open);
-
-  const handleSlotsCreated = async (slots) => {
-    await createInterviewSlots(slotGenFormId, slots);
-    setCreatedSlotCount(slots.length);
-    setError('');
-  };
 
   const rankedCandidates = [...candidates]
     .filter((s) => s.email)
@@ -358,7 +351,9 @@ function SendModal({ template, draft, candidate, preloadedCandidates = [], onSel
       <div className="flex min-h-full items-center justify-center">
         <div
           onClick={(e) => e.stopPropagation()}
-          className="w-full max-w-md rounded-[20px] bg-[#f2efe7] p-7 shadow-2xl ring-1 ring-plum/10"
+          className={`w-full rounded-[20px] bg-[#f2efe7] p-5 shadow-2xl ring-1 ring-plum/10 transition-[max-width] duration-300 sm:p-7 ${
+            slotGenOpen ? 'max-w-6xl' : 'max-w-md'
+          }`}
         >
           <div className="flex items-start justify-between gap-4">
           <div className="min-w-0">
@@ -569,34 +564,16 @@ function SendModal({ template, draft, candidate, preloadedCandidates = [], onSel
                 >
                   {slotGenOpen ? <CloseIcon /> : <PlusIcon />}
                   {slotGenOpen ? 'Close slot generator' : 'Create interview slots for this job'}
-                  {createdSlotCount > 0 && (
-                    <span className="ml-1 rounded-full bg-gold px-2 py-0.5 text-[10px] font-bold text-plum">
-                      {createdSlotCount} created
-                    </span>
-                  )}
                 </button>
 
-                <div
-                  className={`grid transition-[grid-template-rows] duration-300 ease-in-out ${
-                    slotGenOpen ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'
-                  }`}
-                >
-                  <div className="min-h-0 overflow-hidden">
-                    <div className="mt-4 rounded-2xl bg-white/60 p-5 ring-1 ring-plum/10">
-                      <SlotGeneratorForm formTitle={slotGenFormTitle} onCreated={handleSlotsCreated} />
-                    </div>
-                    {createdSlotCount > 0 && (
-                      <div className="mt-4 flex items-start gap-3 rounded-xl bg-[#a7eda7]/40 px-4 py-3 text-sm font-semibold text-[#0d6921]">
-                        <CheckIcon />
-                        <span>
-                          {createdSlotCount} interview slot{createdSlotCount === 1 ? '' : 's'} created
-                          {slotGenFormTitle ? ` for ${slotGenFormTitle}` : ''}. Candidates can pick
-                          one of these times once you share your scheduling link.
-                        </span>
-                      </div>
-                    )}
+                {slotGenOpen && (
+                  <div className="mt-4 rounded-2xl bg-white/60 p-5 ring-1 ring-plum/10">
+                    <InterviewTimeslotScheduler
+                      formId={slotGenFormId}
+                      formTitle={slotGenFormTitle}
+                    />
                   </div>
-                </div>
+                )}
               </div>
             )}
 
