@@ -287,8 +287,16 @@ function Navbar() {
 
   useEffect(() => {
     if (!open) return;
-    const handleScroll = () => setOpen(false);
-    const handleTouch = () => setOpen(false);
+    const isInsideDrawer = (target) =>
+      target && typeof target.closest === 'function' && Boolean(target.closest('[data-nav-drawer]'));
+    const handleScroll = (event) => {
+      if (isInsideDrawer(event.target)) return;
+      setOpen(false);
+    };
+    const handleTouch = (event) => {
+      if (isInsideDrawer(event.target)) return;
+      setOpen(false);
+    };
     window.addEventListener('scroll', handleScroll, { passive: true, capture: true });
     document.addEventListener('scroll', handleScroll, { passive: true, capture: true });
     window.addEventListener('touchmove', handleTouch, { passive: true, capture: true });
@@ -327,6 +335,7 @@ function Navbar() {
           />
           <aside
             aria-hidden={!visible}
+            data-nav-drawer
             className={`absolute inset-y-0 left-0 w-[297px] max-w-[85vw] shadow-2xl transition-transform duration-450 ease-[cubic-bezier(0.22,1,0.36,1)] ${
               visible ? 'translate-x-0 scale-x-100' : '-translate-x-full scale-x-[0.97]'
             }`}
