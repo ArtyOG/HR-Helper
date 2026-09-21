@@ -125,10 +125,22 @@ function SendModal({ template, draft, candidate, preloadedCandidates = [], onSel
   const [candidatesError, setCandidatesError] = useState('');
   const [slotGenOpen, setSlotGenOpen] = useState(false);
   const [sentCount, setSentCount] = useState(0);
+  const [removedIds, setRemovedIds] = useState(() => new Set());
 
   const isInterview = template?.id === 'interview';
-  const preloaded = preloadedCandidates.length > 0 ? preloadedCandidates : candidate ? [candidate] : [];
+  const recipientKey = (c) => c?.submissionId || c?.email;
+  const preloaded = (preloadedCandidates.length > 0 ? preloadedCandidates : candidate ? [candidate] : []).filter(
+    (c) => !removedIds.has(recipientKey(c))
+  );
   const multi = preloaded.length > 1;
+
+  const handleRemoveRecipient = (recipient) => {
+    setRemovedIds((prev) => new Set(prev).add(recipientKey(recipient)));
+    if (preloaded.length === 1) {
+      onSelectCandidate(null);
+      setBrowsing(true);
+    }
+  };
 
   const { forms, loading: formsLoading } = useForms();
   const {
@@ -432,6 +444,15 @@ function SendModal({ template, draft, candidate, preloadedCandidates = [], onSel
                           {c.jobTitle}
                         </span>
                       )}
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveRecipient(c)}
+                        aria-label={`Remove ${c.email} from recipients`}
+                        title="Remove from recipients"
+                        className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-stone-400 transition hover:bg-red-100 hover:text-red-600"
+                      >
+                        <CloseIcon />
+                      </button>
                     </li>
                   ))}
                 </ul>
@@ -539,13 +560,24 @@ function SendModal({ template, draft, candidate, preloadedCandidates = [], onSel
                       </span>
                     )}
                   </span>
-                  <button
-                    type="button"
-                    onClick={() => setBrowsing(true)}
-                    className="shrink-0 rounded-full border border-plum/20 px-3 py-1.5 text-xs font-semibold text-plum transition hover:bg-plum hover:text-white"
-                  >
-                    Change
-                  </button>
+                  <div className="flex shrink-0 items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setBrowsing(true)}
+                      className="rounded-full border border-plum/20 px-3 py-1.5 text-xs font-semibold text-plum transition hover:bg-plum hover:text-white"
+                    >
+                      Change
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveRecipient(candidate)}
+                      aria-label={`Remove ${candidate?.email} from recipients`}
+                      title="Remove from recipients"
+                      className="flex h-7 w-7 items-center justify-center rounded-full text-stone-400 transition hover:bg-red-100 hover:text-red-600"
+                    >
+                      <CloseIcon />
+                    </button>
+                  </div>
                 </div>
                 
               </div>
