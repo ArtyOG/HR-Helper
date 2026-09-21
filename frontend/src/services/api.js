@@ -130,6 +130,29 @@ export async function uploadCvToS3(uploadUrl, file) {
   if (!response.ok) throw new Error(`File upload failed (${response.status})`);
 }
 
+export async function uploadCvDirect(file) {
+  const formData = new FormData();
+  formData.append('file', file);
+
+  const headers = {};
+  const token = localStorage.getItem('HiOringToken');
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
+
+  const response = await fetch(`${API_URL}${API_PREFIX}/files/upload`, {
+    method: 'POST',
+    headers,
+    body: formData,
+  });
+
+  const data = await response.json().catch(() => null);
+  if (!response.ok) {
+    throw new Error(data?.message || `File upload failed (${response.status})`);
+  }
+  return data;
+}
+
 export function getFileDownloadUrl(fileId) {
   return request(`/files/${fileId}`);
 }

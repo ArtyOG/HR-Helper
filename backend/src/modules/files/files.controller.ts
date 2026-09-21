@@ -1,5 +1,6 @@
-import { Controller, Post, Get, Body, Param } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiParam} from '@nestjs/swagger';
+import { Controller, Post, Get, Body, Param, UseInterceptors, UploadedFile, BadRequestException } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { ApiTags, ApiOperation, ApiResponse, ApiParam, ApiConsumes, ApiBody } from '@nestjs/swagger';
 import { FilesService } from './files.service';
 import { CreateUploadUrlDto } from './dto/createUploadUrl.dto';
 import { CreateFileRecordDto } from './dto/createFileRecord.dto';
@@ -8,6 +9,33 @@ import { CreateFileRecordDto } from './dto/createFileRecord.dto';
 @Controller('files')
 export class FilesController {
   constructor(private readonly filesService: FilesService) {}
+
+  @Post('upload')
+  @UseInterceptors(FileInterceptor('file', {
+    limits: { fileSize: 10 * 1024 * 1024 },
+  }))
+  @ApiOperation({ summary: 'Directly upload a CV file to S3 via backend (bypasses browser S3 CORS)' })
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        file: {
+          type: 'string',
+          format: 'binary',
+        },
+      },
+    },
+  })
+  @ApiResponse({ status: 201, description: 'File uploaded successfully.' })
+  async uploadFile(
+    @UploadedFile() file: { originalname: string; mimetype: string; size: number; buffer: Buffer },
+  ) {
+    if (!file) {
+      throw new BadRequestException('No file uploaded.');
+    }
+    return this.filesService.uploadFileDirect(file);
+  }
 
   @Post()
   @ApiOperation({ summary: 'Create a file record in the database' })

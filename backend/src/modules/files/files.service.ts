@@ -33,6 +33,36 @@ export class FilesService {
     return { key, uploadUrl };
   }
 
+  async uploadFileDirect(file: { originalname: string; mimetype: string; size: number; buffer: Buffer }): Promise<FileResponseDto> {
+    if (!file.originalname.toLowerCase().endsWith('.pdf')) {
+      throw new BadRequestException('Only PDF files are allowed.');
+    }
+
+    if (file.size <= 0) {
+      throw new BadRequestException('File size must be greater than 0 bytes.');
+    }
+
+    if (file.size > 10 * 1024 * 1024) {
+      throw new BadRequestException('File size exceeds the maximum limit of 10 MB.');
+    }
+
+    const safeName = file.originalname.replace(/[^a-zA-Z0-9.-]/g, '_');
+    const key = `documents/${Date.now()}-${safeName}`;
+
+    await this.s3Service.uploadFileBuffer(file.buffer, key, 'application/pdf');
+
+    const fileRecord = await this.prisma.file.create({
+      data: {
+        filename: safeName,
+        key: key,
+        contentType: 'application/pdf',
+        size: file.size,
+      },
+    });
+
+    return new FileResponseDto(fileRecord);
+  }
+
   async createFileRecord(key: string): Promise<FileResponseDto> {
     try {
       const metadata = await this.s3Service.getFileMetadata(key);

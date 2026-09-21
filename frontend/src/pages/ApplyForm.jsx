@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { getForm, submitFormAnswers, getPresignedUploadUrl, uploadCvToS3, createFileRecord } from '../services/api';
+import { getForm, submitFormAnswers, getPresignedUploadUrl, uploadCvToS3, createFileRecord, uploadCvDirect } from '../services/api';
 import { formatDateTime, getNextStatusTime, isFormAcceptingResponses } from '../utils/forms';
 import { useNow } from '../hooks/useNow';
 
@@ -187,9 +187,17 @@ function ApplyForm() {
     setCvError(null);
 
     try {
-      const { uploadUrl, key } = await getPresignedUploadUrl(file.name, file.size);
-      await uploadCvToS3(uploadUrl, file);
-      const { id: fileId } = await createFileRecord(key);
+      let fileId;
+      try {
+        const { uploadUrl, key } = await getPresignedUploadUrl(file.name, file.size);
+        await uploadCvToS3(uploadUrl, file);
+        const { id } = await createFileRecord(key);
+        fileId = id;
+      } catch (presignedErr) {
+        // Direct server upload fallback: eliminates Filebase/S3 browser CORS limitations
+        const record = await uploadCvDirect(file);
+        fileId = record.id;
+      }
       setCvFileId(fileId);
       setCvUploadState('done');
     } catch (err) {

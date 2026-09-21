@@ -10,7 +10,7 @@ async function bootstrap() {
   const frontendUrl = process.env.FRONTEND_URL?.replace(/\/+$/, '');
   const allowedOrigins: string[] = [
     'http://localhost:5173',
-    ...(frontendUrl ? [frontendUrl] : []),
+    ...(frontendUrl ? frontendUrl.split(',').map((u) => u.trim().replace(/\/+$/, '')) : []),
   ];
   app.enableCors({
     origin: allowedOrigins,
