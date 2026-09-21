@@ -25,26 +25,28 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
 
     async validate(accessToken: string, refreshToken: string, profile: any, done: VerifyCallback): Promise<any> {
         try {
-            const { name, emails, photos } = profile;
+            const { name, emails, photos, displayName } = profile;
 
-            if (!emails || emails.length === 0 || !emails[0].value) {
+            if (!emails || emails.length === 0 || !emails[0]?.value) {
                 throw new Error('Google profile must have a valid email');
             }
 
-            if (!name || !name.givenName || !name.familyName) {
-                throw new Error('Google profile must have a valid name');
-            }
+            const email = emails[0].value.toLowerCase().trim();
+            const fullName = displayName 
+                || [name?.givenName, name?.familyName].filter(Boolean).join(' ') 
+                || email.split('@')[0];
 
             const user = await this.authService.validateGoogleUser({
-                email: emails[0].value,
-                name: `${name.givenName} ${name.familyName}`,
+                email,
+                name: fullName,
                 avatar: photos?.[0]?.value,
                 googleId: profile.id,
             }, 
             refreshToken,
             );
             done(null, user);
-        } catch (error) {
+        } catch (error: any) {
+            console.error('[GoogleStrategy] Validation error:', error?.message || error);
             done(error, false);
         }
     }
