@@ -2,7 +2,6 @@ import { useEffect } from 'react';
 import Navbar from '../components/landing/Navbar';
 import Hero from '../components/landing/Hero';
 import StatsBar from '../components/landing/StatsBar';
-import AboutUs from '../components/landing/AboutUs';
 import PainPoints from '../components/landing/PainPoints';
 import Steps from '../components/landing/Steps';
 import Workflow from '../components/landing/Workflow';
@@ -22,7 +21,6 @@ function LandingPage() {
       <main className="flex-grow">
         <Hero />
         <StatsBar />
-        <AboutUs />
         <PainPoints />
         <Steps />
         <Workflow />

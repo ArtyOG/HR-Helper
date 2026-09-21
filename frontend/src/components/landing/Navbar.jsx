@@ -4,7 +4,6 @@ import Logo from '../common/Logo';
 
 const links = [
   { label: 'Home', href: '#top' },
-  { label: 'About Us', href: '#about' },
   { label: 'How it works', href: '#how-it-works' },
   { label: 'Features', href: '#features' },
   { label: 'Support', href: '#support' },
