@@ -1,0 +1,28 @@
+name: Keep Services Warm (Render 24/7)
+
+on:
+  schedule:
+    # Runs every 10 minutes to prevent Render from sleeping (Render timeout is 15 min)
+    - cron: '*/10 * * * *'
+  workflow_dispatch: # Allows manual trigger from GitHub Actions tab anytime
+
+concurrency:
+  group: keep-alive-render
+  cancel-in-progress: true
+
+jobs:
+  ping-services:
+    name: Ping Render Services
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping Backend Service
+        run: |
+          echo "Pinging Backend..."
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" --max-time 45 "https://hr-helper-backend.onrender.com/api/health" || echo "ERR")
+          echo "Backend HTTP status: $STATUS"
+
+      - name: Ping AI Service
+        run: |
+          echo "Pinging AI Service..."
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" --max-time 45 "https://hioring-ai.onrender.com/health" || echo "ERR")
+          echo "AI Service HTTP status: $STATUS"
