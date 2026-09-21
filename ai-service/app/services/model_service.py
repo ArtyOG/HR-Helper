@@ -1,3 +1,4 @@
+
 import io
 import re
 
@@ -137,6 +138,85 @@ def extract_summary_chunk(text: str) -> str:
     return f"{start} {skills} {end}"
 
 
+# ── New Scoring Components ────────────────────────────────────────────────────────
+
+def calculate_experience_score(cv_text: str, job_req: str) -> float:
+    """Extract years of experience and compare against job requirements."""
+    # Find all mentions of years of experience (e.g., "5 years", "3+ years")
+    cv_years = [int(y) for y in re.findall(r'(\d+)\+?\s*years?', cv_text.lower())]
+    job_years = [int(y) for y in re.findall(r'(\d+)\+?\s*years?', job_req.lower())]
+    
+    if not job_years:
+        return 100.0  # Job doesn't specify years of experience, give full points
+
+    req_years = max(job_years)
+    max_cv_years = max(cv_years) if cv_years else 0
+    
+    if max_cv_years >= req_years:
+        return 100.0
+    elif max_cv_years > 0:
+        return (max_cv_years / req_years) * 100
+    return 0.0
+
+def extract_education_section(text: str) -> str:
+    """Extract education section using common keywords."""
+    text_lower = text.lower()
+    start_keywords = ["education", "academic", "degree", "university", "college"]
+    end_keywords = ["experience", "skill", "project", "work", "certification", "summary"]
+    
+    start_idx = -1
+    for kw in start_keywords:
+        idx = text_lower.find(kw)
+        if idx != -1:
+            start_idx = idx
+            break
+            
+    if start_idx == -1:
+        return ""
+        
+    end_idx = len(text)
+    for kw in end_keywords:
+        idx = text_lower.find(kw, start_idx + 10)
+        if idx != -1 and idx < end_idx:
+            end_idx = idx
+            
+    return text[start_idx:end_idx].strip()
+
+def calculate_education_score(cv_text: str, job_embedding, model) -> float:
+    """Score the education section against the job requirements."""
+    edu_text = extract_education_section(cv_text)
+    if not edu_text:
+        # Fallback: check if standard degrees are mentioned anywhere
+        if any(deg in cv_text.lower() for deg in ["bachelor", "master", "phd", "degree", "b.s", "m.s", "bsc", "msc"]):
+            edu_text = cv_text
+        else:
+            return 50.0  # Neutral score if absolutely no education found
+            
+    edu_embedding = model.encode(edu_text, convert_to_tensor=True)
+    score = float(util.cos_sim(edu_embedding, job_embedding)[0][0]) * 100
+    return max(0.0, score)
+
+def calculate_keyword_boost(cv_text: str, job_req: str) -> float:
+    """Bonus score for exactly matching common tech keywords found in the job req."""
+    # A base list of common tech keywords + our pre-processing ones
+    tech_keywords = list(NO_SPACE_FIXES.values()) + [
+        "python", "java", "c++", "c#", "ruby", "php", "sql", "aws", "azure", 
+        "gcp", "docker", "kubernetes", "agile", "scrum", "git", "linux", "api", "rest"
+    ]
+    
+    req_words = set(job_req.lower().replace(",", " ").replace(".", " ").split())
+    # Which of these tech words actually appear in the job requirement?
+    required_tech = [kw for kw in tech_keywords if kw in req_words or kw.replace(" ", "") in req_words]
+    
+    if not required_tech:
+        return 100.0  # No specific known keywords to boost, give full points
+        
+    cv_lower = cv_text.lower()
+    matches = sum(1 for kw in required_tech if kw in cv_lower or kw.replace(" ", "") in cv_lower)
+    
+    return (matches / len(required_tech)) * 100
+
+
 # ── Scoring ────────────────────────────────────────────────────────────────────
 
 def compute_score(cv_text: str, job_requirements: str) -> float:
@@ -148,8 +228,9 @@ def compute_score(cv_text: str, job_requirements: str) -> float:
     2. Add a summary chunk (global view of entire CV)
     3. Compare every chunk against the full job requirement sentence
     4. Sort scores, take top 3 average (stable result)
-    5. Score skills section separately (weighted 70%) ← increased from 60%
-    6. Final = (top3_average * 0.3) + (skills_score * 0.7)
+    5. Score skills section separately
+    6. Extract and score Experience, Education, and exact Keywords
+    7. Combine all using weighted formula
     """
     # Encode job requirements once
     job_embedding = model.encode(job_requirements, convert_to_tensor=True)
@@ -176,8 +257,18 @@ def compute_score(cv_text: str, job_requirements: str) -> float:
     skills_embedding = model.encode(skills_text, convert_to_tensor=True)
     skills_score     = float(util.cos_sim(skills_embedding, job_embedding)[0][0]) * 100
 
-    # 30% chunks + 70% skills section ← changed from 40/60 to 30/70
-    final_score = (full_score * 0.3) + (skills_score * 0.7)
+    # --- NEW COMPONENTS ---
+    exp_score = calculate_experience_score(cv_text, job_requirements)
+    edu_score = calculate_education_score(cv_text, job_embedding, model)
+    keyword_boost = calculate_keyword_boost(cv_text, job_requirements)
+
+    # New weights (Job title removed):
+    # Overall chunks: 25%
+    # Skills section: 50%
+    # Experience:     10%
+    # Education:      10%
+    # Keyword Boost:   5%
+    final_score = (full_score * 0.25) + (skills_score * 0.50) + (exp_score * 0.10) + (edu_score * 0.10) + (keyword_boost * 0.05)
 
     return round(final_score, 2)
 
