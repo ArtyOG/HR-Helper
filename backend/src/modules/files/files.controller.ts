@@ -1,41 +1,14 @@
-import { Controller, Post, Get, Body, Param, UseInterceptors, UploadedFile, BadRequestException } from '@nestjs/common';
-import { FileInterceptor } from '@nestjs/platform-express';
-import { ApiTags, ApiOperation, ApiResponse, ApiParam, ApiConsumes, ApiBody } from '@nestjs/swagger';
+import { Controller, Post, Get, Body, Param, UseGuards, Req } from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiResponse, ApiParam, ApiBearerAuth } from '@nestjs/swagger';
 import { FilesService } from './files.service';
 import { CreateUploadUrlDto } from './dto/createUploadUrl.dto';
 import { CreateFileRecordDto } from './dto/createFileRecord.dto';
+import { JwtAuthGuard } from '../auth/auth.middleware';
 
 @ApiTags('files')
 @Controller('files')
 export class FilesController {
   constructor(private readonly filesService: FilesService) {}
-
-  @Post('upload')
-  @UseInterceptors(FileInterceptor('file', {
-    limits: { fileSize: 10 * 1024 * 1024 },
-  }))
-  @ApiOperation({ summary: 'Directly upload a CV file to S3 via backend (bypasses browser S3 CORS)' })
-  @ApiConsumes('multipart/form-data')
-  @ApiBody({
-    schema: {
-      type: 'object',
-      properties: {
-        file: {
-          type: 'string',
-          format: 'binary',
-        },
-      },
-    },
-  })
-  @ApiResponse({ status: 201, description: 'File uploaded successfully.' })
-  async uploadFile(
-    @UploadedFile() file: { originalname: string; mimetype: string; size: number; buffer: Buffer },
-  ) {
-    if (!file) {
-      throw new BadRequestException('No file uploaded.');
-    }
-    return this.filesService.uploadFileDirect(file);
-  }
 
   @Post()
   @ApiOperation({ summary: 'Create a file record in the database' })
@@ -51,18 +24,19 @@ export class FilesController {
     return this.filesService.getPresignedUploadUrl(dto.filename, dto.filesize);
   }
 
-  @Get()
-  @ApiOperation({ summary: 'Get all file records' })
-  @ApiResponse({ status: 200, description: 'File records retrieved successfully.' })
-  async getFile() {
-    return this.filesService.getFile();
-  }
-
   @Get(':id')
-  @ApiOperation({ summary: 'Get file details by ID' })
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard)
+  @ApiOperation({ summary: 'Get file details and presigned download URL by ID' })
   @ApiParam({ name: 'id', description: 'The ID of the file record', type: Number })
-  @ApiResponse({ status: 200, description: 'File details retrieved successfully.' })
-  async getFileById(@Param('id') id: number) {
-    return this.filesService.getFileById(id);
+  @ApiResponse({ status: 200, description: 'File details and download URL retrieved successfully.' })
+  @ApiResponse({ status: 401, description: 'Unauthorized.' })
+  @ApiResponse({ status: 403, description: 'Forbidden. You do not own the form associated with this file.' })
+  @ApiResponse({ status: 404, description: 'File not found.' })
+  async getFileById(
+    @Req() req: { user: { id: number } },
+    @Param('id') id: number,
+  ) {
+    return this.filesService.getFileById(Number(id), req.user.id);
   }
 }
