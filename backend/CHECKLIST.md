@@ -38,7 +38,3 @@ Because `FilesModule` was developed before `AuthModule`, file IDs are auto-incre
 - [ ] **`cv-evaluation-response.dto.ts`**: Update `fileId` and `FileDetailDto.id` to `string`.
 - [ ] **`FilesService.getFileById(id: string)`**: Update parameter to `string`.
 
-### Access Control & Authorization (`FilesController`)
-- [ ] **Secure `GET /api/files/:id`**: Apply `JwtAuthGuard` and verify permission so unauthenticated users cannot generate presigned download URLs for stored CVs.
-- [ ] **Remove or Protect `GET /api/files`**: Prevent public listing of all file records in the database.
-
