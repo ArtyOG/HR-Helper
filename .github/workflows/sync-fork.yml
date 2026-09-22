@@ -1,0 +1,28 @@
+name: Auto Sync Fork from Upstream
+
+on:
+  schedule:
+    # Checks and syncs from upstream every 30 minutes
+    - cron: '*/30 * * * *'
+  workflow_dispatch: # Allows 1-click manual sync anytime from GitHub Actions tab
+
+permissions:
+  contents: write
+
+jobs:
+  sync-fork:
+    name: Sync Fork with Upstream
+    runs-on: ubuntu-latest
+    # Only runs on forks (safely skips if run in the main bobaurmom repo)
+    if: github.repository != 'bobaurmom/HR-Helper'
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Sync from upstream
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          echo "Syncing ${{ github.repository }} from upstream main..."
+          gh repo sync ${{ github.repository }} -b main
+          echo "Fork successfully synced with upstream!"
