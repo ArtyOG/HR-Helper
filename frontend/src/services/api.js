@@ -157,12 +157,6 @@ export function updateSubmissionStatus(formId, submissionId, status) {
   });
 }
 
-export function rescoreSubmission(formId, submissionId) {
-  return request(`/forms/${formId}/submissions/${submissionId}/rescore`, {
-    method: 'POST',
-  });
-}
-
 export function sendTemplateEmail({ to, subject, templateName, context }) {
   return request('/email/send-template', {
     method: 'POST',

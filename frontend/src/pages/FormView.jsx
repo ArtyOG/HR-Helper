@@ -188,6 +188,21 @@ function FormView() {
                   )}
                 </div>
               </div>
+
+              <div className="mt-6 rounded-[20px] bg-white/70 p-5 ring-1 ring-plum/10">
+                <p className="text-sm font-semibold text-stone-800">
+                  Upload your CV <span className="text-red-500">*</span>
+                </p>
+                <p className="mt-1 text-xs text-stone-400">PDF only, max 10MB</p>
+                <div className="mt-3 flex cursor-not-allowed flex-col items-center justify-center gap-2 rounded-[16px] border-2 border-dashed border-plum/20 bg-[#efede5] py-8 opacity-70">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="h-8 w-8 text-stone-400">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z" />
+                    <path d="M14 2v6h6" />
+                  </svg>
+                  <span className="text-sm font-medium text-stone-600">Click or drop your CV here</span>
+                  <span className="text-xs text-stone-400">PDF, max 10MB</span>
+                </div>
+              </div>
             </div>
           )}
         </div>

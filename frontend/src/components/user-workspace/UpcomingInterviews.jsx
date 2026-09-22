@@ -45,8 +45,7 @@ function UpcomingInterviews({ interviews = [], loading = false }) {
 
   return (
     <section className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-plum/10">
-      <div className="flex items-center justify-between gap-3">
-        <div className="flex items-center gap-2">
+      <div className="flex items-center gap-2">
           <h2 className="font-sans text-lg font-bold text-plum">Upcoming Interviews</h2>
           {interviews.length > 0 && (
             <span className="flex h-6 min-w-6 items-center justify-center rounded-full bg-teal px-2 text-[11px] font-bold text-white">
@@ -54,10 +53,6 @@ function UpcomingInterviews({ interviews = [], loading = false }) {
             </span>
           )}
         </div>
-        <span className="rounded-md bg-gold/25 px-2.5 py-1 text-[11px] font-bold uppercase tracking-wide text-plum">
-          Tomorrow
-        </span>
-      </div>
 
       {loading ? (
         <LoadingSkeleton />
@@ -81,7 +76,7 @@ function UpcomingInterviews({ interviews = [], loading = false }) {
                 </p>
               </div>
 
-              <span className="shrink-0 rounded-md bg-gold/25 px-2 py-1 text-[11px] font-bold text-plum">
+              <span className="shrink-0 rounded-md bg-[#DAD7CD] px-2 py-1 text-[11px] font-bold text-plum">
                 {formatTime(interview.start)}
               </span>
 

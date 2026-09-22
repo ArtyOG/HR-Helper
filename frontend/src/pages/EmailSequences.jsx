@@ -16,18 +16,14 @@ const INITIAL_TEMPLATES = [
   {
     id: 'interview',
     name: 'Interview Invitation',
-    tag: 'Interview',
-    tagColor: '#8d35ad',
     subject: 'Interview Invitation – {{role}} at Acme Corp',
-    body: 'Dear [Candidate Name],\n\nCongratulations! 🎉 Your application for [Position Name] has been shortlisted for an interview.\nPlease select your preferred interview time here:\n[Interview Scheduling Link]\n\nThank you, and we look forward to meeting you.\n\nBest regards,\n[Company Name]\nHR Team',
+    body: 'Dear [Candidate Name],\n\nCongratulations! 🎉 Your application for [Position Name] has been shortlisted for an interview.\nPlease select your preferred interview time here:\n[Interview Scheduling Link]\n\nThank you, and we look forward to meeting you.\n\nBest regards,\n{{senderName}}\n{{senderTitle}}, {{companyName}}',
   },
   {
     id: 'rejection',
     name: 'Rejection – After Review',
-    tag: 'Reject',
-    tagColor: '#ad3535',
     subject: 'Your application – {{role}} at Acme Corp',
-    body: 'Hi [Candidate Name],\n\nThank you for applying for the UX Designer role at [Company Name]. After careful review, we\u2019ve decided to move forward with other candidates whose experience more closely matches what we\u2019re looking for right now. We really appreciate the time you put into your application and would welcome you to apply again in the future.\n\nWishing you the best in your search.\n\u2014 [Company Name] Hiring Team',
+    body: 'Hi [Candidate Name],\n\nThank you for applying for the {{jobTitle}} role at [Company Name]. After careful review, we\u2019ve decided to move forward with other candidates whose experience more closely matches what we\u2019re looking for right now. We really appreciate the time you put into your application and would welcome you to apply again in the future.\n\nWishing you the best in your search.\n\u2014 {{senderName}}, {{senderTitle}}, {{companyName}}',
   },
 ];
 
@@ -42,8 +38,56 @@ const renderTemplateText = (text = '', context = {}) =>
     .split('{{jobTitle}}').join(context.jobTitle || '')
     .split('[Company Name]').join(context.companyName || '[Company Name]')
     .split('{{companyName}}').join(context.companyName || '')
+    .split('[Sender Name]').join(context.senderName || '')
+    .split('{{senderName}}').join(context.senderName || '')
+    .split('[Sender Title]').join(context.senderTitle || '')
+    .split('{{senderTitle}}').join(context.senderTitle || '')
     .split('[Interview Scheduling Link]').join(context.scheduleLink || '[Interview Scheduling Link]')
     .split('{{scheduleLink}}').join(context.scheduleLink || '');
+
+const senderFieldForToken = (token) => {
+  if (token === '{{senderName}}' || token === '[Sender Name]') return 'senderName';
+  if (token === '{{senderTitle}}' || token === '[Sender Title]') return 'senderTitle';
+  if (token === '{{companyName}}' || token === '[Company Name]') return 'companyName';
+  return null;
+};
+
+const SENDER_TOKEN_RE =
+  /\{\{senderName\}\}|\{\{senderTitle\}\}|\{\{companyName\}\}|\[Sender Name\]|\[Sender Title\]|\[Company Name\]/g;
+
+function SenderChip({ token, sender, onSenderChange }) {
+  const field = senderFieldForToken(token) || 'companyName';
+  const hint = { senderName: 'Name', senderTitle: 'Title', companyName: 'Company' }[field];
+  return (
+    <span className="mx-1.5 my-1 inline-flex items-center rounded-lg bg-stone-200 align-middle ring-1 ring-plum/15">
+      <input
+        type="text"
+        value={sender[field]}
+        onChange={(e) => onSenderChange(field, e.target.value)}
+        aria-label={
+          field === 'senderName' ? 'Sender name' : field === 'senderTitle' ? 'Sender title' : 'Company name'
+        }
+        placeholder={hint}
+        className="max-w-full bg-transparent px-3 py-1 text-center text-sm font-semibold text-plum outline-none placeholder:font-normal placeholder:text-stone-400"
+      />
+    </span>
+  );
+}
+
+function renderBodyWithSenderChips(body, context, sender, onSenderChange) {
+  const text = String(body);
+  const matches = [...text.matchAll(SENDER_TOKEN_RE)];
+  if (matches.length === 0) return renderTemplateText(text, context);
+  const pieces = [];
+  let last = 0;
+  matches.forEach((m, i) => {
+    if (m.index > last) pieces.push(renderTemplateText(text.slice(last, m.index), context));
+    pieces.push(<SenderChip key={`sender-${i}`} token={m[0]} sender={sender} onSenderChange={onSenderChange} />);
+    last = m.index + m[0].length;
+  });
+  if (last < text.length) pieces.push(renderTemplateText(text.slice(last), context));
+  return pieces;
+}
 
 const initialsFromEmail = (email = '') => {
   const local = (email || '').split('@')[0] || '';
@@ -101,12 +145,6 @@ function TemplateRow({ template, active, onSelect }) {
           {template.name}
         </span>
         <span className="mt-2 flex items-center justify-between gap-2">
-          <span
-            className="inline-flex rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide"
-            style={{ backgroundColor: `${template.tagColor}1a`, color: template.tagColor }}
-          >
-            {template.tag}
-          </span>
           {active && <span className="text-[11px] font-semibold text-stone-400">Editing</span>}
         </span>
       </span>
@@ -114,7 +152,7 @@ function TemplateRow({ template, active, onSelect }) {
   );
 }
 
-function SendModal({ template, draft, candidate, preloadedCandidates = [], onSelectCandidate, onClose }) {
+function SendModal({ template, draft, candidate, sender, preloadedCandidates = [], onSelectCandidate, onClose }) {
   const [sending, setSending] = useState(false);
   const [error, setError] = useState('');
   const [sent, setSent] = useState(false);
@@ -276,7 +314,9 @@ function SendModal({ template, draft, candidate, preloadedCandidates = [], onSel
           const emailContext = {
             candidateName: (c.email || '').split('@')[0],
             jobTitle: title,
-            companyName: 'HiOring',
+            companyName: sender?.companyName || 'HiOring',
+            senderName: sender?.senderName || '',
+            senderTitle: sender?.senderTitle || '',
             scheduleLink: c.formId && c.submissionId
               ? `${window.location.origin}/schedule/${c.formId}/${c.submissionId}`
               : '',
@@ -420,7 +460,9 @@ function SendModal({ template, draft, candidate, preloadedCandidates = [], onSel
                 {renderTemplateText(draft.subject, {
                   candidateName: (preloaded[0]?.email || '').split('@')[0],
                   jobTitle: preloaded[0]?.jobTitle || '',
-                  companyName: 'HiOring',
+                  companyName: sender?.companyName || 'HiOring',
+                  senderName: sender?.senderName || '',
+                  senderTitle: sender?.senderTitle || '',
                 }) || '(no subject)'}
               </span>
             </label>
@@ -662,6 +704,11 @@ function EmailSequences() {
   const [sendTarget, setSendTarget] = useState(null);
   const [candidate, setCandidate] = useState(null);
   const [autoOpened, setAutoOpened] = useState(false);
+  const [sender, setSender] = useState(() => ({
+    senderName: 'Jennifer Vin',
+    senderTitle: 'HR Team',
+    companyName: 'HiOring',
+  }));
 
   const selected = templates.find((t) => t.id === selectedId);
   const draft = drafts[selectedId];
@@ -700,6 +747,10 @@ function EmailSequences() {
     setEditing((prev) => !prev);
   };
 
+  const updateSenderField = (field, value) => {
+    setSender((prev) => ({ ...prev, [field]: value }));
+  };
+
   const inputBase = 'mt-2 w-full rounded-xl bg-white text-base text-stone-800 outline-none transition placeholder:text-stone-400';
   const inputState = editing
     ? 'cursor-text border border-plum/15 shadow-sm focus:border-teal focus:ring-2 focus:ring-teal/20'
@@ -709,7 +760,9 @@ function EmailSequences() {
   const previewContext = {
     candidateName: previewTarget ? (previewTarget.email || '').split('@')[0] : '',
     jobTitle: previewTarget?.jobTitle || '',
-    companyName: 'HiOring',
+    companyName: sender.companyName,
+    senderName: sender.senderName,
+    senderTitle: sender.senderTitle,
     scheduleLink:
       previewTarget?.formId && previewTarget?.submissionId
         ? `${window.location.origin}/schedule/${previewTarget.formId}/${previewTarget.submissionId}`
@@ -736,12 +789,7 @@ function EmailSequences() {
 
       <div className="mt-6 flex flex-col overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-plum/10 md:flex-row">
         <aside className="flex w-full shrink-0 flex-col border-b border-plum/10 md:w-[338px] md:border-b-0 md:border-r">
-          <div className="flex items-center justify-between px-6 pb-3 pt-6">
-            <h2 className="font-sans text-lg font-bold text-plum">Templates</h2>
-            <span className="rounded-full bg-plum/10 px-3 py-1 text-xs font-bold text-plum">
-              {templates.length}
-            </span>
-          </div>
+          <h2 className="px-6 pb-3 pt-6 font-sans text-lg font-bold text-plum">Templates</h2>
           <div className="flex flex-1 flex-col divide-y divide-plum/5">
             {templates.map((template) => (
               <TemplateRow
@@ -757,12 +805,6 @@ function EmailSequences() {
         <section className="min-w-0 flex-1 bg-[#fffef9] p-5 sm:p-8">
           <div className="flex flex-wrap items-center gap-3">
             <h1 className="text-2xl font-bold tracking-tight text-[#344e41]">{selected.name}</h1>
-            <span
-              className="rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide"
-              style={{ backgroundColor: `${selected.tagColor}1a`, color: selected.tagColor }}
-            >
-              {selected.tag}
-            </span>
           </div>
 
           <div className="mt-7 space-y-6">
@@ -785,9 +827,20 @@ function EmailSequences() {
               <p className="block text-xs font-bold uppercase tracking-wider text-plum">
                 Body preview <span className="font-medium normal-case text-stone-400">(rendered on send)</span>
               </p>
-              <pre className={`mt-2 min-h-[240px] overflow-x-auto rounded-xl px-4 py-3 text-base leading-relaxed whitespace-pre-wrap text-stone-700 ${inputState}`}>
-                {previewBody || '(empty template)'}
+              <pre className={`mt-2 min-h-[240px] overflow-x-auto rounded-xl px-4 py-3 font-sans text-base leading-relaxed whitespace-pre-wrap text-stone-700 ${inputState}`}>
+                {editing
+                  ? renderBodyWithSenderChips(draft.body, previewContext, sender, updateSenderField)
+                  : (previewBody || '(empty template)')}
               </pre>
+              {editing && (
+                <p className="mt-2 text-[11px] leading-relaxed text-stone-400">
+                  Tip: the grey chips are the sender details — click them to edit the{' '}
+                  <code className="rounded bg-plum/5 px-1.5 py-0.5 font-mono text-[10px] text-plum">{'{{senderName}}'}</code>,{' '}
+                  <code className="rounded bg-plum/5 px-1.5 py-0.5 font-mono text-[10px] text-plum">{'{{senderTitle}}'}</code>, and{' '}
+                  <code className="rounded bg-plum/5 px-1.5 py-0.5 font-mono text-[10px] text-plum">{'{{companyName}}'}</code>{' '}
+                  parts of the template.
+                </p>
+              )}
             </div>
           </div>
 
@@ -876,6 +929,7 @@ function EmailSequences() {
           template={sendTarget}
           draft={drafts[sendTarget.id]}
           candidate={candidate}
+          sender={sender}
           preloadedCandidates={incomingCandidates}
           onSelectCandidate={setCandidate}
           onClose={() => setSendTarget(null)}

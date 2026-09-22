@@ -15,7 +15,7 @@ function StatusPill({ status }) {
     Scheduled: 'bg-gold/20 text-plum',
   };
   return (
-    <span className={`rounded-md px-2.5 py-1 text-[11px] font-semibold leading-none ${styles[status] ?? styles.Closed}`}>
+    <span className={`inline-flex h-8 items-center rounded-lg px-2.5 text-[11px] font-semibold leading-none ${styles[status] ?? styles.Closed}`}>
       {status}
     </span>
   );
@@ -237,16 +237,10 @@ function JobCard({ job, onApplicants, onEdit, onDelete, onDuplicate, onCopyLink,
           onCopyLink();
         }
       }}
-      className="group relative flex cursor-pointer flex-col rounded-2xl bg-white p-5 shadow-sm ring-1 ring-plum/10 transition hover:shadow-md"
+      className="group relative flex cursor-pointer flex-col rounded-2xl border border-plum/10 bg-white p-5 shadow-sm transition hover:shadow-md"
     >
       <div className="flex items-center justify-between gap-2">
-        <div className="flex flex-wrap items-center gap-2">
-          <StatusPill status={job.status} />
-          <span className="flex items-center gap-1.5 text-xs font-semibold text-stone-500">
-            <UsersIcon />
-            {job.applicants}
-          </span>
-        </div>
+        <StatusPill status={job.status} />
 
         <ActionIconRow
           items={[
@@ -420,9 +414,16 @@ function JobCard({ job, onApplicants, onEdit, onDelete, onDuplicate, onCopyLink,
       </div>
 
       <div className="mt-auto flex items-center justify-between gap-3 pt-6">
-        <span className="text-xs text-stone-400">
-          {job.closeAt ? `Closes ${formatDateTime(job.closeAt)}` : 'No close time'}
-        </span>
+        <div className="flex min-w-0 items-center gap-1.5 text-xs">
+          <span className="flex shrink-0 items-center gap-1.5 font-semibold text-stone-500">
+            <UsersIcon />
+            {job.applicants}
+          </span>
+          <span aria-hidden="true" className="text-stone-300">•</span>
+          <span className="truncate text-stone-400">
+            {job.closeAt ? `Closes ${formatDateTime(job.closeAt)}` : 'No close time'}
+          </span>
+        </div>
         <button
           type="button"
           onClick={(e) => {
@@ -449,6 +450,7 @@ function JobListingsPage() {
   } = useNavigation();
   const { forms, loading, setForms } = useForms();
   const [searchQuery, setSearchQuery] = useState('');
+  const [statusFilter, setStatusFilter] = useState(null);
   const now = useNow(getNextFormsStatusTime(forms));
 
   const {
@@ -512,6 +514,42 @@ function JobListingsPage() {
       )
     : jobs;
 
+  const activeJobs = filteredJobs.filter(
+    (job) => job.status === 'Live' || job.status === 'Scheduled'
+  );
+  const closedJobs = filteredJobs.filter((job) => job.status === 'Closed');
+
+  const showActive = statusFilter === null || statusFilter === 'active';
+  const showClosed = statusFilter === null || statusFilter === 'closed';
+  const toggleFilter = (key) => setStatusFilter((prev) => (prev === key ? null : key));
+  const visibleHasJobs = (showActive && activeJobs.length > 0) || (showClosed && closedJobs.length > 0);
+
+  const jobProps = (job) => ({
+    key: job.id,
+    job,
+    onApplicants: () => goToSubmissionsWs(job.id),
+    onEdit: () => goToEditFormWs(job.id),
+    onDelete: () => setDeleteTarget(job.form),
+    onDuplicate: () => handleDuplicate(job.form),
+    onCopyLink: () => copyLink(job.form),
+    onCloseNow:
+      job.status === 'Live' || job.status === 'Scheduled'
+        ? () => setCloseTarget(job.form)
+        : undefined,
+    onOpen: job.status === 'Closed' ? () => setOpenTarget(job.form) : undefined,
+    onSubmissions: () => goToSubmissionsWs(job.id),
+    onPreview: () => goToFormViewWs(job.id),
+    onInterviews: () => goToInterviewsWs(job.id),
+  });
+
+  const renderJobsGrid = (list) => (
+    <div className="mt-4 max-h-[540px] overflow-y-auto pb-2 pr-4 pl-1 pt-4 [scrollbar-gutter:stable] [scrollbar-width:thin]">
+      <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
+        {list.map((job) => <JobCard {...jobProps(job)} />)}
+      </div>
+    </div>
+  );
+
   return (
     <div>
       <div className="mx-auto max-w-site">
@@ -544,10 +582,42 @@ function JobListingsPage() {
           <div className="mt-6 rounded-2xl bg-white p-6 shadow-sm ring-1 ring-plum/10">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div className="flex items-center gap-3">
-                <h2 className="font-sans text-lg font-bold text-plum">All roles</h2>
-                <span className="rounded-full bg-plum px-3 py-1 text-xs font-bold text-white">
-                  {filteredJobs.length} {filteredJobs.length === 1 ? 'role' : 'roles'}
-                </span>
+                <button
+                  type="button"
+                  aria-pressed={statusFilter === null}
+                  onClick={() => setStatusFilter(null)}
+                  className={`rounded-full px-3 py-1 text-xs font-bold transition ${
+                    statusFilter === null
+                      ? 'bg-plum text-white shadow-sm'
+                      : 'bg-plum/10 text-plum hover:bg-plum/20'
+                  }`}
+                >
+                  All roles
+                </button>
+                <button
+                  type="button"
+                  aria-pressed={statusFilter === 'active'}
+                  onClick={() => toggleFilter('active')}
+                  className={`rounded-full px-3 py-1 text-xs font-bold transition ${
+                    statusFilter === 'active'
+                      ? 'bg-teal text-white shadow-sm'
+                      : 'bg-teal/10 text-teal hover:bg-teal/20'
+                  }`}
+                >
+                  active
+                </button>
+                <button
+                  type="button"
+                  aria-pressed={statusFilter === 'closed'}
+                  onClick={() => toggleFilter('closed')}
+                  className={`rounded-full px-3 py-1 text-xs font-bold transition ${
+                    statusFilter === 'closed'
+                      ? 'bg-stone-500 text-white shadow-sm'
+                      : 'bg-stone-100 text-stone-500 hover:bg-stone-200'
+                  }`}
+                >
+                  closed
+                </button>
               </div>
 
               <SearchBar
@@ -564,35 +634,50 @@ function JobListingsPage() {
                   {Array.from({ length: 6 }).map((_, i) => <SkeletonCard key={i} />)}
                 </div>
               ) : jobs.length > 0 ? (
-                filteredJobs.length > 0 ? (
-                  <div className="mt-4 grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
-                    {filteredJobs.map((job) => (
-                      <JobCard
-                        key={job.id}
-                        job={job}
-                        onApplicants={() => goToSubmissionsWs(job.id)}
-                        onEdit={() => goToEditFormWs(job.id)}
-                        onDelete={() => setDeleteTarget(job.form)}
-                        onDuplicate={() => handleDuplicate(job.form)}
-                        onCopyLink={() => copyLink(job.form)}
-                        onCloseNow={
-                          job.status === 'Live' || job.status === 'Scheduled'
-                            ? () => setCloseTarget(job.form)
-                            : undefined
-                        }
-                        onOpen={job.status === 'Closed' ? () => setOpenTarget(job.form) : undefined}
-                        onSubmissions={() => goToSubmissionsWs(job.id)}
-                        onPreview={() => goToFormViewWs(job.id)}
-                        onInterviews={() => goToInterviewsWs(job.id)}
-                      />
+                filteredJobs.length > 0 && visibleHasJobs ? (
+                  <div className="mt-6 space-y-10">
+                    {showActive && activeJobs.length > 0 && (
+                      <section>
+                        <div className="flex items-center gap-3">
+                          <h3 className="font-sans text-sm font-bold uppercase tracking-wide text-teal">
+                            Active
+                          </h3>
+                          <span className="rounded-full bg-teal/10 px-3 py-1 text-xs font-bold text-teal">
+                            {activeJobs.length} {activeJobs.length === 1 ? 'role' : 'roles'}
+                          </span>
+                        </div>
+                        {renderJobsGrid(activeJobs)}
+                      </section>
+                    )}
 
-
-                    ))}
+                    {showClosed && closedJobs.length > 0 && (
+                      <section>
+                        <div className="flex items-center gap-3">
+                          <h3 className="font-sans text-sm font-bold uppercase tracking-wide text-stone-500">
+                            Closed
+                          </h3>
+                          <span className="rounded-full bg-stone-100 px-3 py-1 text-xs font-bold text-stone-500">
+                            {closedJobs.length} {closedJobs.length === 1 ? 'role' : 'roles'}
+                          </span>
+                        </div>
+                        {renderJobsGrid(closedJobs)}
+                      </section>
+                    )}
                   </div>
                 ) : (
                   <div className="py-14 text-center">
-                    <p className="text-sm font-semibold text-stone-600">No forms match &ldquo;{searchQuery}&rdquo;</p>
-                    <p className="mt-1 text-sm text-stone-500">Try a different search term.</p>
+                    <p className="text-sm font-semibold text-stone-600">
+                      {statusFilter
+                        ? `No ${statusFilter === 'active' ? 'active' : 'closed'} roles${
+                            q ? ' match your search' : ' right now'
+                          }`
+                        : `No forms match &ldquo;${searchQuery}&rdquo;`}
+                    </p>
+                    <p className="mt-1 text-sm text-stone-500">
+                      {statusFilter
+                        ? 'Clear the filter or try a different search term.'
+                        : 'Try a different search term.'}
+                    </p>
                   </div>
                 )
               ) : (

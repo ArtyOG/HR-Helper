@@ -416,35 +416,16 @@ function UploadZone({ icon, title, subtitle, onRemove }) {
   );
 }
 
-function UploadSection({ includeCoverLetter, onIncludeCoverLetterChange }) {
+function UploadSection() {
   return (
     <section className="rounded-[20px] bg-[#f2efe7] p-5 ring-1 ring-plum/10 sm:p-6">
-      <div className="flex items-center justify-between">
-        <h3 className="text-lg font-bold text-plum">Uploads</h3>
-        {!includeCoverLetter && (
-          <button
-            type="button"
-            onClick={() => onIncludeCoverLetterChange(true)}
-            className="rounded-full bg-plum px-4 py-2 text-xs font-semibold text-white transition hover:bg-plum-dark"
-          >
-            + Add cover letter
-          </button>
-        )}
-      </div>
-      <div className="mt-4 grid gap-4 sm:grid-cols-2">
+      <h3 className="text-lg font-bold text-plum">Uploads</h3>
+      <div className="mt-4">
         <UploadZone
           icon={<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="h-6 w-6"><path strokeLinecap="round" d="M7 3h7l4 4v14a1 1 0 01-1 1H7a1 1 0 01-1-1V4a1 1 0 011-1z" /><path strokeLinecap="round" d="M14 3v4h4" /></svg>}
           title="Upload your CV"
           subtitle="Drop your CV here / PDF Max 10MB"
         />
-        {includeCoverLetter && (
-          <UploadZone
-            icon={<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="h-6 w-6"><path strokeLinecap="round" d="M17 8h2a2 2 0 012 2v10a2 2 0 01-2 2H8a2 2 0 01-2-2V6a2 2 0 012-2h7l2 2 4 4z" /></svg>}
-            title="Cover letter"
-            subtitle="Drop your cover letter here"
-            onRemove={() => onIncludeCoverLetterChange(false)}
-          />
-        )}
       </div>
       <p className="mt-3 text-[11px] text-stone-400">
         Note: uploaded files are stored as a single CV attachment per submission.
@@ -528,7 +509,6 @@ function FormBuilder({ initialForm = null, template = 'standard' }) {
   const [linkCopied, setLinkCopied] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [needsSignIn, setNeedsSignIn] = useState(false);
-  const [includeCoverLetter, setIncludeCoverLetter] = useState(true);
   const [scheduleEnabled, setScheduleEnabled] = useState(!!initialForm?.closeAt);
   const [closeAtLocal, setCloseAtLocal] = useState(() =>
     initialForm?.closeAt
@@ -888,7 +868,7 @@ function FormBuilder({ initialForm = null, template = 'standard' }) {
       </section>
 
       <div className="mt-8">
-        <UploadSection includeCoverLetter={includeCoverLetter} onIncludeCoverLetterChange={setIncludeCoverLetter} />
+        <UploadSection />
       </div>
 
       <section className="mt-8 rounded-[20px] bg-[#f2efe7] p-5 ring-1 ring-plum/10 sm:p-6">

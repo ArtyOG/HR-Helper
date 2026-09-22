@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useLocation, useParams } from 'react-router-dom';
 import { useFormsBackNav } from '../hooks/useFormsBackNav';
 import { useNavigation } from '../context/NavigationContext';
@@ -8,7 +8,6 @@ import {
   listSubmissions,
   getSubmission,
   deleteSubmission,
-  rescoreSubmission,
   getFileDownloadUrl,
 } from '../services/api';
 import { getApplicantName } from '../utils/applicantName';
@@ -20,10 +19,6 @@ const STATUS_META = {
   APPROVED: { label: 'Approved' },
   REJECTED: { label: 'Rejected' },
 };
-
-const AI_TERMINAL_STATES = ['COMPLETED', 'FAILED', 'SKIPPED'];
-const AI_POLL_INTERVAL_MS = 3000;
-const AI_POLL_TIMEOUT_MS = 90000;
 
 const formatDate = (value) => {
   if (!value) return '—';
@@ -266,12 +261,7 @@ function SubmissionsView() {
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [deleteError, setDeleteError] = useState(null);
   const [deleting, setDeleting] = useState(false);
-  const [rescoring, setRescoring] = useState(false);
   const [cvBusyId, setCvBusyId] = useState(null);
-  const [rescoreNote, setRescoreNote] = useState(null);
-  const [rescoreTimedOut, setRescoreTimedOut] = useState(false);
-  const rescoreTimerRef = useRef(null);
-  const rescoreTargetRef = useRef(null);
 
   const load = async () => {
     if (!formId) return;
@@ -294,12 +284,6 @@ function SubmissionsView() {
   useEffect(() => {
     load();
   }, [formId]);
-
-  useEffect(() => {
-    return () => {
-      if (rescoreTimerRef.current) clearTimeout(rescoreTimerRef.current);
-    };
-  }, []);
 
   const counts = useMemo(() => {
     const stats = { total: submissions.length, PENDING: 0, APPROVED: 0, REJECTED: 0 };
@@ -426,93 +410,6 @@ function SubmissionsView() {
     }
   };
 
-  const doRescore = async (submission) => {
-    if (!formId || rescoring || submission.cvEvaluation?.status === 'PROCESSING') return;
-    rescoreTargetRef.current = { id: submission.id, email: submission.email, startedAt: Date.now() };
-    setRescoring(true);
-    setRescoreTimedOut(false);
-    setError(null);
-    setRescoreNote(`Rescoring ${submission.email}...`);
-    try {
-      await rescoreSubmission(formId, submission.id);
-      rescoreTimerRef.current = window.setTimeout(
-        () => tickRescore(rescoreTargetRef.current),
-        AI_POLL_INTERVAL_MS
-      );
-    } catch (err) {
-      setRescoring(false);
-      setRescoreNote(null);
-      setError(err.message || 'Failed to start rescore.');
-    }
-  };
-
-  const tickRescore = async (target) => {
-    if (!formId || !target) return;
-    let current;
-    try {
-      current = await getSubmission(formId, target.id);
-    } catch (err) {
-      if (Date.now() - target.startedAt > AI_POLL_TIMEOUT_MS) {
-        setRescoring(false);
-        setRescoreTimedOut(true);
-        setRescoreNote(`Rescore for ${target.email} is taking longer than expected.`);
-        return;
-      }
-      rescoreTimerRef.current = window.setTimeout(
-        () => tickRescore(target),
-        AI_POLL_INTERVAL_MS
-      );
-      return;
-    }
-
-    const aiStatus = current?.cvEvaluation?.status;
-    if (current && AI_TERMINAL_STATES.includes(aiStatus)) {
-      try {
-        await load();
-      } catch {
-        // load() already surfaces its own error
-      }
-      setRescoring(false);
-      if (aiStatus === 'COMPLETED') {
-        setRescoreNote(`Rescore complete for ${target.email}.`);
-      } else if (aiStatus === 'SKIPPED') {
-        setRescoreNote(`Rescore skipped for ${target.email}: ${current.cvEvaluation?.error ?? 'no job requirements or CV on file'}.`);
-      } else {
-        setRescoreNote(
-          current.cvEvaluation?.error
-            ? `Rescore failed for ${target.email}: ${current.cvEvaluation.error}`
-            : `Rescore failed for ${target.email}.`
-        );
-      }
-      return;
-    }
-
-    if (Date.now() - target.startedAt > AI_POLL_TIMEOUT_MS) {
-      if (rescoreTimerRef.current) {
-        clearTimeout(rescoreTimerRef.current);
-        rescoreTimerRef.current = null;
-      }
-      setRescoring(false);
-      setRescoreTimedOut(true);
-      setRescoreNote(`Rescore for ${target.email} is taking longer than expected.`);
-      return;
-    }
-    rescoreTimerRef.current = window.setTimeout(() => tickRescore(target), AI_POLL_INTERVAL_MS);
-  };
-
-  const recheckRescore = () => {
-    const target = rescoreTargetRef.current;
-    if (!formId || !target || rescoring) return;
-    setRescoring(true);
-    setRescoreTimedOut(false);
-    setRescoreNote(`Checking ${target.email}...`);
-    rescoreTargetRef.current = { ...target, startedAt: Date.now() };
-    rescoreTimerRef.current = window.setTimeout(
-      () => tickRescore(rescoreTargetRef.current),
-      AI_POLL_INTERVAL_MS
-    );
-  };
-
   const selectedIds = [...selected];
 
   return (
@@ -528,35 +425,6 @@ function SubmissionsView() {
         {error && (
           <div className="mb-5 rounded-[20px] bg-red-100 px-5 py-4 text-sm font-semibold text-red-600">
             {error}
-          </div>
-        )}
-
-        {rescoreNote && (
-          <div className="mb-5 flex items-start justify-between gap-4 rounded-[20px] bg-gold/40 px-5 py-4 text-sm font-semibold text-plum">
-            <span>{rescoreNote}</span>
-            <span className="flex shrink-0 items-center gap-2">
-              {rescoreTimedOut && !rescoring && (
-                <button
-                  type="button"
-                  onClick={recheckRescore}
-                  className="rounded-full bg-plum px-3 py-1 text-[11px] font-bold text-white transition hover:bg-plum-dark"
-                >
-                  Check status
-                </button>
-              )}
-              {!rescoring && (
-                <button
-                  type="button"
-                  onClick={() => setRescoreNote(null)}
-                  aria-label="Dismiss rescore notice"
-                  className="rounded-full p-1 text-plum/60 transition hover:bg-plum/10 hover:text-plum"
-                >
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" className="h-4 w-4">
-                    <path d="M18 6 6 18M6 6l12 12" />
-                  </svg>
-                </button>
-              )}
-            </span>
           </div>
         )}
 
@@ -741,22 +609,6 @@ function SubmissionsView() {
                                 </svg>
                               )}
                               Review CV
-                            </button>
-                            <button
-                              type="button"
-                              disabled={rescoring || submission.cvEvaluation?.status === 'PROCESSING'}
-                              onClick={() => doRescore(submission)}
-                              aria-label={`Rescore submission from ${getApplicantName(submission, form)}`}
-                              title={
-                                submission.cvEvaluation?.status === 'PROCESSING'
-                                  ? 'AI rescore already in progress'
-                                  : 'Rescore AI score'
-                              }
-                              className="flex h-7 w-7 items-center justify-center rounded-full text-stone-400 transition hover:bg-gold/40 hover:text-plum disabled:cursor-not-allowed disabled:opacity-50"
-                            >
-                              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-4 w-4">
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h5M20 20v-5h-5M20 9a8 8 0 00-14-3.5M4 15a8 8 0 0014 3.5" />
-                              </svg>
                             </button>
                             <button
                               type="button"

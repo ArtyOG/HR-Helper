@@ -78,7 +78,7 @@ function Hero() {
                     authHovered === 'trial' ? 'text-white' : 'text-plum'
                   }`}
                 >
-                  Start free trial
+                  Create Form
                 </a>
                 <a
                   ref={viewRef}

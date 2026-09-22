@@ -314,7 +314,7 @@ function Billing() {
             Billing
           </h1>
           <p className="mt-2 text-sm font-medium text-stone-500">
-            Manage your plan, payment method and invoices
+            Manage your plan and payment method
           </p>
         </div>
 
@@ -409,38 +409,6 @@ function Billing() {
             >
               Update payment method
             </button>
-          </div>
-        </div>
-
-        <div className="overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-plum/10 lg:col-span-2">
-          <div className="flex items-center justify-between border-b border-plum/10 px-6 py-4">
-            <p className="text-xs font-bold uppercase tracking-wider text-plum">Invoices</p>
-            <span className="rounded-full bg-[#f3f1e9] px-3 py-1 text-[10px] font-bold uppercase tracking-wide text-stone-500">
-              Sample data
-            </span>
-          </div>
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-sm">
-              <tbody className="divide-y divide-plum/5">
-                {[
-                  ['Sep 1, 2026', `${plan.name} plan — September`, plan.price === '$0' ? '$0.00' : `${plan.price}.00`, 'Paid'],
-                  ['Aug 1, 2026', `${plan.name} plan — August`, plan.price === '$0' ? '$0.00' : `${plan.price}.00`, 'Paid'],
-                  ['Jul 1, 2026', `${plan.name} plan — July`, plan.price === '$0' ? '$0.00' : `${plan.price}.00`, 'Paid'],
-                ].map(([date, desc, amount, status]) => (
-                  <tr key={date}>
-                    <td className="px-6 py-3.5 font-semibold text-[#344e41]">{date}</td>
-                    <td className="px-6 py-3.5 text-stone-600">{desc}</td>
-                    <td className="px-6 py-3.5 text-right font-semibold text-stone-700">{amount}</td>
-                    <td className="px-6 py-3.5 text-right">
-                      <span className="inline-flex items-center gap-1.5 rounded-full bg-teal/10 px-3 py-1 text-[11px] font-bold uppercase tracking-wide text-teal">
-                        <CheckIcon />
-                        {status}
-                      </span>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
           </div>
         </div>
       </section>
