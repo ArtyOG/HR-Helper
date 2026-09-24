@@ -1,17 +1,12 @@
 
-import gc
 import io
 import re
 
 import httpx
 import pdfplumber
-import torch
 from sentence_transformers import SentenceTransformer, util
 
 from app.core.config import settings
-
-# Restrict PyTorch CPU thread count to 1 to reduce per-core memory overhead on Render
-torch.set_num_threads(1)
 
 # Load the sentence-transformers model once when the service starts
 print(f"Loading model: {settings.model_name} ...")
@@ -197,9 +192,8 @@ def calculate_education_score(cv_text: str, job_embedding, model) -> float:
         else:
             return 50.0  # Neutral score if absolutely no education found
             
-    with torch.inference_mode():
-        edu_embedding = model.encode(edu_text, convert_to_tensor=True)
-        score = float(util.cos_sim(edu_embedding, job_embedding)[0][0]) * 100
+    edu_embedding = model.encode(edu_text, convert_to_tensor=True)
+    score = float(util.cos_sim(edu_embedding, job_embedding)[0][0]) * 100
     return max(0.0, score)
 
 def calculate_keyword_boost(cv_text: str, job_req: str) -> float:
@@ -238,33 +232,35 @@ def compute_score(cv_text: str, job_requirements: str) -> float:
     6. Extract and score Experience, Education, and exact Keywords
     7. Combine all using weighted formula
     """
-    with torch.inference_mode():
-        # Encode job requirements once
-        job_embedding = model.encode(job_requirements, convert_to_tensor=True)
+    # Encode job requirements once
+    job_embedding = model.encode(job_requirements, convert_to_tensor=True)
 
-        # Build all chunks + summary chunk
-        chunks    = chunk_text(cv_text)
-        summary   = extract_summary_chunk(cv_text)
-        all_chunks = chunks + [summary]
+    # Build all chunks + summary chunk
+    chunks    = chunk_text(cv_text)
+    summary   = extract_summary_chunk(cv_text)
+    all_chunks = chunks + [summary]
 
-        # Score all chunks against job requirements in batch (avoids memory fragmentation)
-        chunk_embeddings = model.encode(all_chunks, batch_size=4, convert_to_tensor=True)
-        scores = [float(util.cos_sim(emb, job_embedding)[0][0]) * 100 for emb in chunk_embeddings]
+    # Score every chunk against job requirements
+    scores = []
+    for chunk in all_chunks:
+        chunk_embedding = model.encode(chunk, convert_to_tensor=True)
+        score = float(util.cos_sim(chunk_embedding, job_embedding)[0][0]) * 100
+        scores.append(score)
 
-        # Top 3 average for stability
-        scores.sort(reverse=True)
-        top_3      = scores[:3]
-        full_score = sum(top_3) / len(top_3)
+    # Top 3 average for stability
+    scores.sort(reverse=True)
+    top_3      = scores[:3]
+    full_score = sum(top_3) / len(top_3)
 
-        # Score skills section separately
-        skills_text      = extract_skills_section(cv_text)
-        skills_embedding = model.encode(skills_text, convert_to_tensor=True)
-        skills_score     = float(util.cos_sim(skills_embedding, job_embedding)[0][0]) * 100
+    # Score skills section separately
+    skills_text      = extract_skills_section(cv_text)
+    skills_embedding = model.encode(skills_text, convert_to_tensor=True)
+    skills_score     = float(util.cos_sim(skills_embedding, job_embedding)[0][0]) * 100
 
-        # --- NEW COMPONENTS ---
-        exp_score = calculate_experience_score(cv_text, job_requirements)
-        edu_score = calculate_education_score(cv_text, job_embedding, model)
-        keyword_boost = calculate_keyword_boost(cv_text, job_requirements)
+    # --- NEW COMPONENTS ---
+    exp_score = calculate_experience_score(cv_text, job_requirements)
+    edu_score = calculate_education_score(cv_text, job_embedding, model)
+    keyword_boost = calculate_keyword_boost(cv_text, job_requirements)
 
     # New weights (Job title removed):
     # Overall chunks: 25%
@@ -310,10 +306,6 @@ def process_cv(pdf_url: str, job_requirements: str) -> dict:
     # Step 2: Extract raw text
     raw_text = extract_text_from_pdf(pdf_bytes)
 
-    # Release temporary PDF bytes from RAM immediately after reading text
-    del pdf_bytes
-    gc.collect()
-
     if not raw_text.strip():
         return {
             "success": False,
@@ -326,9 +318,6 @@ def process_cv(pdf_url: str, job_requirements: str) -> dict:
 
     # Step 4: Score CV against job requirements
     score = compute_score(cleaned_text, job_requirements)
-
-    # Clean up memory after scoring
-    gc.collect()
 
     return {
         "success": True,
